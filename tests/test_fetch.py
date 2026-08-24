@@ -82,3 +82,38 @@ def test_write_csv_writes_header_and_rows(tmp_path):
         rows = list(csv.reader(fh))
     assert rows[0] == fetch.CSV_HEADER
     assert rows[1] == ["2026", "04", "ALBACORE", "CHINA", "5", "6"]
+
+
+def test_count_existing_rows_counts_csv_rows_not_physical_lines(tmp_path):
+    """Một field chứa newline nhúng phải tính là 1 dòng, không phải 2."""
+    path = tmp_path / "embedded_newline.csv"
+    fetch.write_csv(path, [
+        ["2026", "04", "ALBACORE\nWITH LINE BREAK", "CHINA", 5, 6],
+        ["2026", "04", "TILAPIA", "VIETNAM", 1, 2],
+    ])
+
+    assert fetch.count_existing_rows(path) == 2
+
+
+def test_count_existing_rows_header_only_is_zero(tmp_path):
+    path = tmp_path / "header_only.csv"
+    fetch.write_csv(path, [])
+
+    assert fetch.count_existing_rows(path) == 0
+
+
+def test_count_existing_rows_missing_file_is_zero(tmp_path):
+    path = tmp_path / "does_not_exist.csv"
+
+    assert fetch.count_existing_rows(path) == 0
+
+
+def test_count_existing_rows_plain_multi_row_file(tmp_path):
+    path = tmp_path / "multi_row.csv"
+    fetch.write_csv(path, [
+        ["2026", "04", "ALBACORE", "CHINA", 5, 6],
+        ["2026", "04", "TILAPIA", "VIETNAM", 1, 2],
+        ["2026", "04", "ZANDER FILLET", "PERU", 3, 4],
+    ])
+
+    assert fetch.count_existing_rows(path) == 3

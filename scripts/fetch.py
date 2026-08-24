@@ -56,10 +56,16 @@ def shrank_too_much(old_row_count, new_row_count, tolerance=SHRINK_TOLERANCE):
 
 
 def count_existing_rows(path):
+    """Đếm số dòng DỮ LIỆU (không tính header) bằng csv.reader, không đếm
+    newline vật lý — field bị quote có thể chứa newline nhúng bên trong,
+    khiến đếm dòng vật lý ra sai số. Đọc theo stream để không load cả file
+    (5.5 MB) vào bộ nhớ."""
     if not os.path.exists(path):
         return 0
     with open(path, newline="", encoding="utf8") as fh:
-        return max(sum(1 for _ in fh) - 1, 0)
+        reader = csv.reader(fh)
+        row_count = sum(1 for _ in reader)
+    return max(row_count - 1, 0)
 
 
 def write_csv(path, rows):
