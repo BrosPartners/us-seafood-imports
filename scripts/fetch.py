@@ -11,7 +11,7 @@ import os
 import sys
 from collections import defaultdict
 
-from scripts import noaa
+from scripts import console, noaa
 
 CSV_HEADER = ["year", "month", "product", "country", "volume_kg", "value_usd"]
 START_YEAR = 2023
@@ -79,6 +79,7 @@ def write_csv(path, rows):
 
 
 def main(argv=None):
+    console.fix_stdio_encoding()
     parser = argparse.ArgumentParser(description="Kéo dữ liệu NOAA về CSV.")
     parser.add_argument("--output", default=DEFAULT_OUTPUT)
     args = parser.parse_args(argv)

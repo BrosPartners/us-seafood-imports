@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 
 import yaml
 
+from scripts import console
+
 DEFAULT_INPUT = os.path.join("data", "trade_imports.csv")
 DEFAULT_CONFIG = "products.yml"
 DEFAULT_OUTPUT = os.path.join("data", "dashboard.json")
@@ -130,6 +132,7 @@ def build(rows, groups, generated_at):
 
 
 def main(argv=None):
+    console.fix_stdio_encoding()
     parser = argparse.ArgumentParser(description="Dựng dashboard.json.")
     parser.add_argument("--input", default=DEFAULT_INPUT)
     parser.add_argument("--config", default=DEFAULT_CONFIG)
