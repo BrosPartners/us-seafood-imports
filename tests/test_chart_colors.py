@@ -192,6 +192,37 @@ def test_switching_to_a_group_with_no_countries_destroys_the_stale_share_chart()
     assert result["cardHiddenAfterSwitch"] is True
 
 
+def test_is_data_stale_false_when_recent():
+    """Đúng kịch bản dữ liệu thật hôm nay: latest_period = 2026-06, hôm nay
+    2026-08-24 — cách ngày kết thúc tháng 06 (2026-07-01) 54 ngày, dưới
+    ngưỡng 75 ngày, nên KHÔNG được báo cũ."""
+    script = textwrap.dedent(f"""
+        const app = require({json.dumps(str(APP_JS))});
+        const now = new Date(2026, 7, 24); // 2026-08-24
+        console.log(JSON.stringify({{
+          fresh: app.isDataStale("2026-06", now),
+          onThreshold: app.isDataStale("2026-06", new Date(2026, 6, 1 + app.STALENESS_THRESHOLD_DAYS)),
+        }}));
+    """)
+    result = run_node(script)
+    assert result["fresh"] is False
+    assert result["onThreshold"] is False
+
+
+def test_is_data_stale_true_when_older_than_threshold():
+    script = textwrap.dedent(f"""
+        const app = require({json.dumps(str(APP_JS))});
+        const now = new Date(2026, 6, 2 + app.STALENESS_THRESHOLD_DAYS); // just past threshold
+        console.log(JSON.stringify({{
+          stale: app.isDataStale("2026-06", now),
+          noPeriod: app.isDataStale(null, now),
+        }}));
+    """)
+    result = run_node(script)
+    assert result["stale"] is True
+    assert result["noPeriod"] is False
+
+
 def test_switching_back_to_a_group_with_countries_renders_a_fresh_chart():
     script = _node_harness_for_share_chart() + textwrap.dedent("""
         app.state.activeKey = "cod";

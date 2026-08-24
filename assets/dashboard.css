@@ -143,3 +143,30 @@ thead th { color: var(--text-tertiary); font-weight: 600; font-size: var(--text-
   border-radius: var(--r-sm);
   padding: 9px 12px;
 }
+
+/* Băng cảnh báo dữ liệu cũ, hiển thị phía trên các biểu đồ. Cùng ngôn ngữ
+   thị giác với .page-foot .warn (nền vàng nhạt, viền trái vàng đậm) để
+   người dùng nhận ra ngay đây cũng là một cảnh báo, không phải nội dung
+   chính. */
+.staleness-banner {
+  background: var(--brand-gold-soft);
+  border-left: 3px solid var(--brand-gold);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  margin-bottom: var(--section-gap);
+  font-size: var(--text-body-sm);
+}
+
+/* Thẻ lỗi khi không tải được dashboard.json. Dùng --trend-down (đỏ) thay
+   vì vàng của .warn để phân biệt rõ: đây là LỖI (không có gì để xem),
+   không phải một cảnh báo đi kèm dữ liệu vẫn hiển thị bình thường. */
+.load-error-card {
+  background: var(--bg-surface);
+  border-left: 3px solid var(--trend-down);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  margin-bottom: var(--section-gap);
+  color: var(--text-primary);
+}
+
+.load-error-card strong { color: var(--trend-down); }

@@ -49,7 +49,7 @@ function assignCountryColors(countryNames) {
   });
 }
 
-function formatKg(value) {
+function formatInt(value) {
   if (value === null || value === undefined) return "—";
   return new Intl.NumberFormat("vi-VN").format(Math.round(value));
 }
@@ -95,7 +95,7 @@ function renderKpis() {
 
   const cards = [
     ["Kỳ gần nhất", state.data.months[last]],
-    ["Sản lượng (kg)", formatKg(volume)],
+    ["Sản lượng (kg)", formatInt(volume)],
     ["ASP (USD/kg)", formatUsdPerKg(asp)],
     ["ASP so tháng trước", change],
   ];
@@ -217,13 +217,13 @@ function tableMatrix() {
   const group = activeGroup();
   const header = ["Chỉ tiêu", ...state.data.months];
   const rows = [
-    ["Sản lượng (kg)", ...group.volume.map(formatKg)],
-    ["Giá trị (USD)", ...group.value.map(formatKg)],
+    ["Sản lượng (kg)", ...group.volume.map(formatInt)],
+    ["Giá trị (USD)", ...group.value.map(formatInt)],
     ["ASP (USD/kg)", ...group.asp.map(formatUsdPerKg)],
   ];
   group.countries.forEach((country) => {
     rows.push([`${country.name} — sản lượng (kg)`,
-               ...country.volume.map(formatKg)]);
+               ...country.volume.map(formatInt)]);
   });
   return { header, rows };
 }
@@ -260,6 +260,54 @@ function exportCsv() {
   URL.revokeObjectURL(link.href);
 }
 
+// NOAA công bố trễ khoảng 1,5 tháng, nên 75 ngày mới đáng báo động (gấp
+// rưỡi độ trễ công bố thông thường — quá ngưỡng này nghĩa là job cập nhật
+// hằng ngày có khả năng đã hỏng, không chỉ là độ trễ công bố bình thường).
+const STALENESS_THRESHOLD_DAYS = 75;
+
+/**
+ * True nếu latest_period (chuỗi "YYYY-MM") cách thời điểm gọi (mặc định
+ * "bây giờ") quá STALENESS_THRESHOLD_DAYS ngày. Hàm thuần, nhận `now` làm
+ * tham số để test được mà không phải mock Date toàn cục.
+ */
+function isDataStale(latestPeriod, now = new Date()) {
+  if (!latestPeriod) return false;
+  const [year, month] = latestPeriod.split("-").map(Number);
+  // Đếm từ NGÀY CUỐI của tháng dữ liệu mới nhất (= ngày đầu tháng kế tiếp),
+  // không phải ngày đầu tháng đó — tháng chỉ thực sự "trôi qua" khi đã kết
+  // thúc. Dùng ngày đầu sẽ báo động giả ngay cả khi dữ liệu vẫn đang trong
+  // độ trễ công bố bình thường của NOAA (~1,5 tháng).
+  const periodEnd = new Date(year, month, 1);
+  const diffDays = (now - periodEnd) / (1000 * 60 * 60 * 24);
+  return diffDays > STALENESS_THRESHOLD_DAYS;
+}
+
+function renderStalenessBanner() {
+  const existing = document.getElementById("staleness-banner");
+  if (existing) existing.remove();
+  if (!isDataStale(state.data.latest_period)) return;
+
+  const banner = document.createElement("div");
+  banner.id = "staleness-banner";
+  banner.className = "staleness-banner";
+  banner.textContent =
+    `Cảnh báo: dữ liệu mới nhất là ${state.data.latest_period}, đã hơn ` +
+    `${STALENESS_THRESHOLD_DAYS} ngày chưa được cập nhật. Có thể job cập ` +
+    "nhật tự động đang gặp sự cố — số liệu hiển thị bên dưới có thể đã cũ.";
+  document.querySelector("main").prepend(banner);
+}
+
+function renderLoadErrorCard(detail) {
+  const card = document.createElement("div");
+  card.id = "load-error-card";
+  card.className = "load-error-card";
+  card.innerHTML =
+    "<strong>Không tải được dữ liệu.</strong> Dashboard hiện không có số " +
+    "liệu để hiển thị. Vui lòng thử tải lại trang; nếu vẫn lỗi, báo cho " +
+    `người quản trị.<br>Chi tiết kỹ thuật: ${detail}`;
+  document.body.prepend(card);
+}
+
 function render() {
   renderTabs();
   renderKpis();
@@ -270,14 +318,34 @@ function render() {
 }
 
 async function init() {
-  const response = await fetch("./data/dashboard.json");
-  state.data = await response.json();
+  let response;
+  try {
+    response = await fetch("./data/dashboard.json");
+  } catch (err) {
+    renderLoadErrorCard(`fetch thất bại (${err.message})`);
+    return;
+  }
+  if (!response.ok) {
+    renderLoadErrorCard(`HTTP ${response.status}`);
+    return;
+  }
+  try {
+    state.data = await response.json();
+  } catch (err) {
+    renderLoadErrorCard(`JSON không hợp lệ (${err.message})`);
+    return;
+  }
+  if (!state.data || !Array.isArray(state.data.groups) || !state.data.groups.length) {
+    renderLoadErrorCard("dashboard.json không có nhóm dữ liệu nào");
+    return;
+  }
   state.activeKey = state.data.groups[0].key;
 
   document.getElementById("meta-line").textContent =
     `Dữ liệu tới ${state.data.latest_period} · cập nhật lần cuối ${state.data.generated_at}`;
   document.getElementById("export-csv").addEventListener("click", exportCsv);
 
+  renderStalenessBanner();
   render();
 }
 
@@ -289,5 +357,6 @@ if (typeof window !== "undefined") {
 // ảnh hưởng khi chạy trong trình duyệt (không có `module` trong global đó).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { assignCountryColors, shouldHideShareChart, renderShareChart,
-                      state, COUNTRY_COLORS, TOTAL_COLOR, OTHER_COLOR };
+                      state, COUNTRY_COLORS, TOTAL_COLOR, OTHER_COLOR,
+                      isDataStale, STALENESS_THRESHOLD_DAYS };
 }
