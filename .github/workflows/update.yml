@@ -43,8 +43,11 @@ jobs:
           # dashboard.json luôn khác nhau giữa các lần chạy (generated_at đổi theo ngày),
           # nên không thể dùng nó để xét "dữ liệu có đổi không". trade_imports.csv mới
           # là nguồn dữ liệu gốc từ NOAA: nó chỉ đổi khi NOAA thật sự công bố số mới.
-          # git diff --quiet trả về 1 (khác) khi file chưa từng được track, nên lần chạy
-          # đầu tiên (chưa có trade_imports.csv trong repo) cũng rơi vào nhánh "có thay đổi".
+          # Lưu ý: `git diff --quiet -- <path>` KHÔNG phát hiện file chưa từng được
+          # track — file untracked không xuất hiện trong git diff nên lệnh này vẫn
+          # trả về 0 (giống hệt). Điều đó không sao ở đây vì data/trade_imports.csv
+          # đã được commit sẵn trong repo từ trước, nên nhánh "file chưa track" không
+          # áp dụng cho job này.
           if git diff --quiet -- data/trade_imports.csv; then
             echo "Dữ liệu không đổi, không commit."
             git checkout -- data/

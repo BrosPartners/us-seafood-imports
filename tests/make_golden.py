@@ -1,6 +1,6 @@
 """Trích fixture golden từ file Excel gốc. Chạy một lần, kết quả commit vào repo.
 
-    python tests/make_golden.py "D:/BP/Bros Partners/Tickers/VHC/Important file VHC/giá cá nhập khẩu US - (final).xlsx"
+    python tests/make_golden.py "<đường dẫn tới file Excel gốc>.xlsx"
 
 Input golden lấy từ Sheet1 (dữ liệu thô), expected lấy từ Sheet2 (giá trị đã
 tính sẵn trong Excel). build.py phải tự đi từ cái thứ nhất tới cái thứ hai.
