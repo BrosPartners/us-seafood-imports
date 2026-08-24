@@ -1,0 +1,135 @@
+/* Style riêng của dashboard. Màu, chữ, bo góc, bóng đều lấy từ token của
+   portal.css để đồng bộ với các dashboard khác của Bros Partners. */
+
+body {
+  margin: 0;
+  padding: var(--content-pad);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
+
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: var(--text-heading-lg);
+  color: var(--accent-text);
+}
+
+.subtitle { margin: 0 0 var(--section-gap); color: var(--text-tertiary); }
+
+.group-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--section-gap);
+}
+
+.group-tabs button {
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-pill);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.group-tabs button:hover { background: var(--bg-hover); }
+
+.group-tabs button[aria-pressed="true"] {
+  background: var(--accent-btn-bg);
+  color: var(--accent-btn-fg);
+  border-color: transparent;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: var(--section-gap);
+}
+
+.kpi {
+  background: var(--bg-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--card-pad);
+}
+
+.kpi .label {
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-tertiary);
+}
+
+.kpi .value {
+  font-size: var(--text-heading-lg);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+.card {
+  background: var(--bg-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--card-pad);
+  margin-bottom: var(--section-gap);
+}
+
+.card h2 { margin: 0 0 14px; font-size: var(--text-heading-sm); }
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-head h2 { margin-bottom: 0; }
+
+.chart-wrap { position: relative; height: 320px; }
+
+.btn {
+  padding: 6px 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--bg-hover); }
+
+/* Bảng rộng phải tự cuộn ngang, không được đẩy cả trang cuộn theo. */
+.table-wrap { overflow-x: auto; margin-top: 12px; }
+
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+
+th, td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--bg-surface); }
+
+thead th { color: var(--text-tertiary); font-weight: 600; font-size: var(--text-body-sm); }
+
+.page-foot {
+  color: var(--text-tertiary);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+}
+
+.page-foot a { color: var(--accent-text); }
+
+.page-foot .warn {
+  background: var(--brand-gold-soft);
+  border-left: 3px solid var(--brand-gold);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+}

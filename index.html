@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhập khẩu thủy sản vào Mỹ — Bros Partners</title>
+<link rel="stylesheet" href="./assets/portal.css">
+<link rel="stylesheet" href="./assets/dashboard.css">
+</head>
+<body>
+<header class="page-head">
+  <h1>Nhập khẩu thủy sản vào Mỹ</h1>
+  <p class="subtitle">Sản lượng, giá trị và giá bình quân theo tháng — nguồn NOAA Fisheries.</p>
+</header>
+
+<nav class="group-tabs" id="group-tabs" aria-label="Chọn nhóm sản phẩm"></nav>
+
+<main>
+  <section class="kpi-row" id="kpi-row"></section>
+
+  <section class="card">
+    <h2>Sản lượng theo tháng</h2>
+    <div class="chart-wrap"><canvas id="chart-volume"></canvas></div>
+  </section>
+
+  <section class="card">
+    <h2>Giá bình quân (ASP, USD/kg)</h2>
+    <div class="chart-wrap"><canvas id="chart-asp"></canvas></div>
+  </section>
+
+  <section class="card" id="share-card">
+    <h2>Thị phần theo nước (sản lượng)</h2>
+    <div class="chart-wrap"><canvas id="chart-share"></canvas></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Số liệu chi tiết</h2>
+      <button type="button" id="export-csv" class="btn">Tải CSV</button>
+    </div>
+    <div class="table-wrap"><table id="data-table"></table></div>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <p>Nguồn: <a href="https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/" target="_blank" rel="noopener">NOAA Fisheries ODS — trade_data</a>. Chỉ gồm hàng nhập khẩu ăn được (IMP, edible).</p>
+  <p class="warn">Số liệu <strong>không bao gồm thuế nhập khẩu</strong> — NOAA ODS API không cung cấp trường Calculated Duty. ASP là giá khai báo hải quan, chưa cộng thuế.</p>
+  <p id="meta-line"></p>
+</footer>
+
+<script src="./assets/chart.umd.min.js"></script>
+<script src="./assets/app.js"></script>
+</body>
+</html>
