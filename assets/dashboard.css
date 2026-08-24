@@ -1,6 +1,16 @@
 /* Style riêng của dashboard. Màu, chữ, bo góc, bóng đều lấy từ token của
    portal.css để đồng bộ với các dashboard khác của Bros Partners. */
 
+/* portal.css chỉ định nghĩa --data-1..--data-7 (7 màu), không đủ cho các
+   nhóm nhiều quốc gia nhất (Cod, Pollock: 8 quốc gia đặt tên + "Other").
+   portal.css được copy nguyên văn từ repo dùng chung nên không sửa ở đó —
+   hai màu bổ sung khai báo riêng tại đây, tách biệt với --data-1..7 và với
+   --trend-flat (dùng cho "Other"), và đủ tương phản trên nền sáng của trang. */
+:root {
+  --data-8: #B91C1C; /* đỏ gạch, dùng cho quốc gia thứ 8 trong bảng màu */
+  --data-9: #0D9488; /* xanh ngọc, dùng riêng cho đường "Toàn nhóm" ở biểu đồ ASP */
+}
+
 body {
   margin: 0;
   padding: var(--content-pad);

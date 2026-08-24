@@ -2,13 +2,51 @@
    Đọc data/dashboard.json (tĩnh), vẽ 3 biểu đồ và 1 bảng.
    Không gọi API lúc chạy — mọi số đã tính sẵn lúc build. */
 
-const SERIES_COLORS = ["--data-1", "--data-2", "--data-3", "--data-4",
-                       "--data-5", "--data-6", "--data-7"];
+// Màu cho các quốc gia được đặt tên (không gồm "Other"). 8 màu đủ cho nhóm
+// nhiều quốc gia nhất hiện có (Cod, Pollock: 8 quốc gia đặt tên + "Other").
+const COUNTRY_COLORS = ["--data-1", "--data-2", "--data-3", "--data-4",
+                        "--data-5", "--data-6", "--data-7", "--data-8"];
+// Đường tổng ("Toàn nhóm") trong biểu đồ ASP dùng màu riêng, tách khỏi
+// palette quốc gia để không bao giờ trùng màu với quốc gia nào.
+const TOTAL_COLOR = "--data-9";
+// "Other" nghĩa là "phần còn lại" — luôn hiển thị bằng màu xám trung tính,
+// không bao giờ chiếm một slot màu của palette quốc gia.
+const OTHER_COLOR = "--trend-flat";
 
 const state = { data: null, activeKey: null, charts: {} };
 
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/**
+ * Gán màu cho danh sách quốc gia theo tên (đầu vào là mảng tên, đúng thứ
+ * tự xuất hiện trong group.countries). Hàm thuần: không đọc DOM, không có
+ * side effect ngoài console.warn khi palette không đủ.
+ *
+ * - "Other" luôn nhận OTHER_COLOR và không tiêu tốn slot palette.
+ * - Các quốc gia khác được gán tuần tự từ COUNTRY_COLORS theo thứ tự xuất
+ *   hiện (không tính "Other").
+ * - Nếu số quốc gia đặt tên vượt quá số màu trong palette, việc lặp màu là
+ *   có thật (không phải bug ẩn) — hàm cảnh báo ra console để việc này lộ ra
+ *   khi phát triển, nhưng vẫn trả về một màu hợp lệ để trang không vỡ.
+ *
+ * Trả về mảng cùng độ dài với countryNames, mỗi phần tử là tên biến CSS.
+ */
+function assignCountryColors(countryNames) {
+  let namedIndex = 0;
+  return countryNames.map((name) => {
+    if (name === "Other") return OTHER_COLOR;
+    if (namedIndex >= COUNTRY_COLORS.length) {
+      console.warn(
+        `assignCountryColors: ${countryNames.length} quốc gia đặt tên vượt ` +
+        `quá ${COUNTRY_COLORS.length} màu trong palette — màu sẽ bị lặp lại.`
+      );
+    }
+    const color = COUNTRY_COLORS[namedIndex % COUNTRY_COLORS.length];
+    namedIndex += 1;
+    return color;
+  });
 }
 
 function formatKg(value) {
@@ -109,18 +147,19 @@ function renderAspChart() {
   const datasets = [{
     label: "Toàn nhóm",
     data: group.asp,
-    borderColor: cssVar("--data-1"),
-    backgroundColor: cssVar("--data-1"),
+    borderColor: cssVar(TOTAL_COLOR),
+    backgroundColor: cssVar(TOTAL_COLOR),
     borderWidth: 2.5,
     pointRadius: 0,
     tension: 0.25,
   }];
+  const colors = assignCountryColors(group.countries.map((c) => c.name));
   group.countries.forEach((country, i) => {
     if (country.name === "Other") return;
     datasets.push({
       label: country.name,
       data: country.asp,
-      borderColor: cssVar(SERIES_COLORS[(i + 1) % SERIES_COLORS.length]),
+      borderColor: cssVar(colors[i]),
       borderWidth: 1.5,
       pointRadius: 0,
       tension: 0.25,
@@ -133,11 +172,24 @@ function renderAspChart() {
   });
 }
 
+/**
+ * Quyết định thuần cho vòng đời chart-share: nhóm không có quốc gia nào thì
+ * phải destroy chart cũ (nếu có) và xoá khỏi state.charts, không được để
+ * lại instance cũ gắn với canvas đã ẩn.
+ */
+function shouldHideShareChart(group) {
+  return !group.countries.length;
+}
+
 function renderShareChart() {
   const group = activeGroup();
   const card = document.getElementById("share-card");
-  if (!group.countries.length) {
+  if (shouldHideShareChart(group)) {
     card.hidden = true;
+    if (state.charts["chart-share"]) {
+      state.charts["chart-share"].destroy();
+      delete state.charts["chart-share"];
+    }
     return;
   }
   card.hidden = false;
@@ -146,6 +198,7 @@ function renderShareChart() {
   options.scales.y.stacked = true;
   options.scales.x.stacked = true;
 
+  const colors = assignCountryColors(group.countries.map((c) => c.name));
   drawChart("chart-share", {
     type: "bar",
     data: {
@@ -153,7 +206,7 @@ function renderShareChart() {
       datasets: group.countries.map((country, i) => ({
         label: country.name,
         data: country.volume,
-        backgroundColor: cssVar(SERIES_COLORS[i % SERIES_COLORS.length]),
+        backgroundColor: cssVar(colors[i]),
       })),
     },
     options,
@@ -228,4 +281,13 @@ async function init() {
   render();
 }
 
-init();
+if (typeof window !== "undefined") {
+  init();
+}
+
+// Xuất các hàm thuần để test từ Node (xem tests/test_chart_colors.py), không
+// ảnh hưởng khi chạy trong trình duyệt (không có `module` trong global đó).
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { assignCountryColors, shouldHideShareChart, renderShareChart,
+                      state, COUNTRY_COLORS, TOTAL_COLOR, OTHER_COLOR };
+}
