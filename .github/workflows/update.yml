@@ -53,4 +53,5 @@ jobs:
           LATEST=$(python -c "import json;print(json.load(open('data/dashboard.json'))['latest_period'])")
           git add data/
           git commit -m "data: cập nhật NOAA tới $LATEST"
+          git pull --rebase origin main
           git push
