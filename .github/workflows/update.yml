@@ -40,8 +40,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/; then
+          # dashboard.json luôn khác nhau giữa các lần chạy (generated_at đổi theo ngày),
+          # nên không thể dùng nó để xét "dữ liệu có đổi không". trade_imports.csv mới
+          # là nguồn dữ liệu gốc từ NOAA: nó chỉ đổi khi NOAA thật sự công bố số mới.
+          # git diff --quiet trả về 1 (khác) khi file chưa từng được track, nên lần chạy
+          # đầu tiên (chưa có trade_imports.csv trong repo) cũng rơi vào nhánh "có thay đổi".
+          if git diff --quiet -- data/trade_imports.csv; then
             echo "Dữ liệu không đổi, không commit."
+            git checkout -- data/
             exit 0
           fi
           LATEST=$(python -c "import json;print(json.load(open('data/dashboard.json'))['latest_period'])")
