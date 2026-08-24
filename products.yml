@@ -1,0 +1,37 @@
+# Nguồn sự thật duy nhất về việc dashboard hiển thị nhóm nào.
+# Thêm nhóm mới = thêm một mục ở đây. Không cần sửa code, không cần kéo lại
+# dữ liệu, vì data/trade_imports.csv đã chứa toàn bộ 500 sản phẩm của NOAA.
+#
+# product  — phải trùng TUYỆT ĐỐI trường `name` của NOAA, kể cả dấu chấm và ngoặc.
+# countries — danh sách nước muốn tách riêng. Phần còn lại gộp vào dòng "Other".
+#             Để trống thì nhóm đó không có breakdown và không có dòng "Other".
+
+- key: tilapia
+  label: Tilapia
+  product: "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN"
+  countries: [CHINA, VIETNAM, TAIWAN, INDONESIA]
+
+- key: pangasius
+  label: Pangasius (cá tra)
+  product: "CATFISH (PANGASIUS) FILLET FROZEN"
+  countries: [VIETNAM, TAIWAN]
+
+- key: haddock
+  label: Haddock
+  product: "GROUNDFISH HADDOCK FILLET FROZEN"
+  countries: [CHINA, INDONESIA, NORWAY, CANADA, ICELAND]
+
+- key: salmon
+  label: Salmon Atlantic
+  product: "SALMON ATLANTIC FILLET FROZEN"
+  countries: []
+
+- key: cod
+  label: Cod NSPF
+  product: "GROUNDFISH COD NSPF FILLET FROZEN"
+  countries: [CHINA, INDONESIA, NORWAY, CANADA, ICELAND, ECUADOR, GREENLAND, VIETNAM]
+
+- key: pollock
+  label: Pollock Alaska
+  product: "GROUNDFISH POLLOCK ALASKA FILLET FROZEN"
+  countries: [CHINA, INDONESIA, UNITED KINGDOM, CANADA, ICELAND, ECUADOR, GREENLAND, VIETNAM]
