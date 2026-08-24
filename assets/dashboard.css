@@ -170,3 +170,16 @@ thead th { color: var(--text-tertiary); font-weight: 600; font-size: var(--text-
 }
 
 .load-error-card strong { color: var(--trend-down); }
+
+/* Ghi chú dưới chart-share khi một nước ẩn trong "Other" lớn hơn nước
+   được liệt kê riêng nhỏ nhất trong nhóm — cùng ngôn ngữ thị giác với
+   .staleness-banner (vàng nhạt) vì đây cũng là một cảnh báo về dữ liệu,
+   không phải nội dung chính. */
+.other-note {
+  background: var(--brand-gold-soft);
+  border-left: 3px solid var(--brand-gold);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  margin-top: var(--section-gap);
+  font-size: var(--text-body-sm);
+}

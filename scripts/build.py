@@ -122,6 +122,40 @@ def asp(value, volume):
     return value / volume
 
 
+def top_unlisted_countries(rows, product, listed_countries, months, top_k=3):
+    """Với mỗi tháng, trả về tối đa `top_k` nước KHÔNG có trong
+    `listed_countries` đóng góp nhiều volume nhất vào dòng "Other" của
+    `product`, sắp xếp giảm dần theo volume.
+
+    Không nhằm liệt kê toàn bộ nước ẩn trong Other (sẽ làm phình
+    dashboard.json) — chỉ lộ ra vài nước lớn nhất để nhà phân tích biết
+    Other không chỉ toàn nước nhỏ lẻ.
+
+    Trả về list độ dài len(months), mỗi phần tử là list các
+    {"name": ..., "volume": ...} (có thể rỗng nếu tháng đó Other = 0 hoặc
+    không có nước nào ngoài danh sách).
+    """
+    index = {m: i for i, m in enumerate(months)}
+    n = len(months)
+    listed = set(listed_countries)
+
+    per_country = defaultdict(lambda: [0] * n)
+    for r in rows:
+        if r["product"] != product or r["country"] in listed:
+            continue
+        i = index[f"{r['year']}-{r['month']}"]
+        per_country[r["country"]][i] += r["volume_kg"]
+
+    result = []
+    for i in range(n):
+        entries = [(name, vols[i]) for name, vols in per_country.items()
+                   if vols[i] > 0]
+        entries.sort(key=lambda t: -t[1])
+        result.append([{"name": name, "volume": vol}
+                        for name, vol in entries[:top_k]])
+    return result
+
+
 def build(rows, groups, generated_at):
     present = sorted({f"{r['year']}-{r['month']}" for r in rows})
     if present:
@@ -182,6 +216,8 @@ def build(rows, groups, generated_at):
                 "volume": other_volume,
                 "value": other_value,
                 "asp": [asp(other_value[i], other_volume[i]) for i in range(n)],
+                "top_unlisted": top_unlisted_countries(
+                    rows, g.product, g.countries, months),
             })
 
         out_groups.append({

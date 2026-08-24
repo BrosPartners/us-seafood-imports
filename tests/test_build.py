@@ -119,6 +119,84 @@ def test_month_with_no_data_for_a_group_yields_zero_volume_and_null_asp():
     assert tilapia["asp"][1] is None
 
 
+def test_top_unlisted_countries_picks_largest_first_and_caps_at_three():
+    data = rows(
+        ("2023", "01", TILAPIA, "HONDURAS", 50, 250),
+        ("2023", "01", TILAPIA, "MEXICO", 90, 90),
+        ("2023", "01", TILAPIA, "BRAZIL", 10, 10),
+        ("2023", "01", TILAPIA, "PERU", 5, 5),
+        ("2023", "01", TILAPIA, "CHINA", 999, 999),  # nước đã liệt kê, bỏ qua
+    )
+
+    result = build.top_unlisted_countries(
+        data, TILAPIA, ["CHINA"], ["2023-01"])
+
+    assert result == [[
+        {"name": "MEXICO", "volume": 90},
+        {"name": "HONDURAS", "volume": 50},
+        {"name": "BRAZIL", "volume": 10},
+    ]]
+
+
+def test_top_unlisted_countries_empty_when_every_country_is_listed():
+    data = rows(("2023", "01", TILAPIA, "CHINA", 100, 400))
+
+    result = build.top_unlisted_countries(
+        data, TILAPIA, ["CHINA"], ["2023-01"])
+
+    assert result == [[]]
+
+
+def test_other_entry_has_no_top_unlisted_when_group_has_no_country_list():
+    data = rows(("2023", "01", TILAPIA, "CHILE", 10, 100))
+
+    out = build.build(data, [group(countries=[])], "2026-08-24")
+
+    assert out["groups"][0]["countries"] == []
+
+
+def test_other_entry_carries_top_unlisted_matching_helper():
+    data = rows(
+        ("2023", "01", TILAPIA, "CHINA", 100, 400),
+        ("2023", "01", TILAPIA, "HONDURAS", 50, 250),
+        ("2023", "01", TILAPIA, "MEXICO", 30, 90),
+    )
+
+    out = build.build(data, [group(countries=["CHINA"])], "2026-08-24")
+
+    other = {c["name"]: c for c in out["groups"][0]["countries"]}["Other"]
+    assert other["top_unlisted"] == [[
+        {"name": "HONDURAS", "volume": 50},
+        {"name": "MEXICO", "volume": 30},
+    ]]
+
+
+def test_haddock_2026_06_top_unlisted_is_thailand_against_real_data():
+    rows_real = build.read_rows("data/trade_imports.csv")
+    groups_real = build.load_config("products.yml")
+
+    out = build.build(rows_real, groups_real, "test")
+
+    haddock = {g["key"]: g for g in out["groups"]}["haddock"]
+    i = out["months"].index("2026-06")
+    other = {c["name"]: c for c in haddock["countries"]}["Other"]
+    assert other["top_unlisted"][i][0]["name"] == "THAILAND"
+    assert other["top_unlisted"][i][0]["volume"] == 54564
+
+
+def test_cod_2026_06_top_unlisted_is_india_against_real_data():
+    rows_real = build.read_rows("data/trade_imports.csv")
+    groups_real = build.load_config("products.yml")
+
+    out = build.build(rows_real, groups_real, "test")
+
+    cod = {g["key"]: g for g in out["groups"]}["cod"]
+    i = out["months"].index("2026-06")
+    other = {c["name"]: c for c in cod["countries"]}["Other"]
+    assert other["top_unlisted"][i][0]["name"] == "INDIA"
+    assert other["top_unlisted"][i][0]["volume"] == 59475
+
+
 def test_load_config_reads_products_yml():
     groups = build.load_config("products.yml")
 

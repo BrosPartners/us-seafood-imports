@@ -181,6 +181,77 @@ function shouldHideShareChart(group) {
   return !group.countries.length;
 }
 
+const OTHER_LABEL = "Other";
+
+/**
+ * Tooltip callback (Chart.js `plugins.tooltip.callbacks.afterBody`) cho
+ * chart-share. Khi lát đang hover có một dataset "Other", nối thêm vài
+ * dòng liệt kê top nước ẩn trong Other cho đúng tháng đó (đã tính sẵn
+ * trong other.top_unlisted lúc build). Không hover vào Other -> [] (không
+ * thêm dòng nào), giữ nguyên tooltip mặc định của Chart.js.
+ */
+function shareTooltipAfterBody(tooltipItems) {
+  const otherItem = tooltipItems.find((item) => item.dataset.label === OTHER_LABEL);
+  if (!otherItem) return [];
+  const group = activeGroup();
+  const other = group.countries.find((c) => c.name === OTHER_LABEL);
+  if (!other || !other.top_unlisted) return [];
+  const top = other.top_unlisted[otherItem.dataIndex] || [];
+  if (!top.length) return [];
+  return ["Trong Other, lớn nhất chưa liệt kê riêng:",
+          ...top.map((e) => `${e.name}: ${formatInt(e.volume)} kg`)];
+}
+
+/**
+ * Nước lớn nhất còn ẩn trong Other tại `monthIndex`, NẾU volume của nó
+ * vượt qua nước được đặt tên nhỏ nhất trong nhóm — đây chính là điều kiện
+ * "đáng để nhắc nhà phân tích xem lại danh sách nước". Trả về null khi
+ * không có breakdown, Other rỗng tháng đó, hoặc không có nước ẩn nào vượt
+ * ngưỡng (kể cả khi group không có "Other" chút nào, ví dụ salmon).
+ * Hàm thuần: không đọc DOM, dễ test độc lập.
+ */
+function findOtherOutlier(group, monthIndex) {
+  if (!group.countries.length) return null;
+  const other = group.countries.find((c) => c.name === OTHER_LABEL);
+  if (!other || !other.top_unlisted) return null;
+  const top = other.top_unlisted[monthIndex] || [];
+  if (!top.length) return null;
+
+  const namedVolumes = group.countries
+    .filter((c) => c.name !== OTHER_LABEL)
+    .map((c) => c.volume[monthIndex]);
+  if (!namedVolumes.length) return null;
+  const minNamed = Math.min(...namedVolumes);
+
+  const biggest = top[0];
+  return biggest.volume > minNamed ? biggest : null;
+}
+
+/**
+ * Render (hoặc gỡ bỏ) ghi chú dưới chart-share cho tháng mới nhất. Không
+ * có outlier -> gỡ hẳn phần tử ra khỏi DOM (không để lại thẻ rỗng).
+ */
+function renderOtherNote() {
+  const existing = document.getElementById("other-note");
+  if (existing) existing.remove();
+
+  const group = activeGroup();
+  if (shouldHideShareChart(group)) return;
+  const monthIndex = state.data.months.length - 1;
+  const outlier = findOtherOutlier(group, monthIndex);
+  if (!outlier) return;
+
+  const note = document.createElement("p");
+  note.id = "other-note";
+  note.className = "other-note";
+  note.textContent =
+    `Lưu ý: trong mục "Other" của ${group.label} tháng ` +
+    `${state.data.months[monthIndex]}, ${outlier.name} chiếm ` +
+    `${formatInt(outlier.volume)} kg — lớn hơn nước được liệt kê riêng ` +
+    "nhỏ nhất trong nhóm. Có thể danh sách nước cần cập nhật.";
+  document.getElementById("share-card").appendChild(note);
+}
+
 function renderShareChart() {
   const group = activeGroup();
   const card = document.getElementById("share-card");
@@ -190,6 +261,8 @@ function renderShareChart() {
       state.charts["chart-share"].destroy();
       delete state.charts["chart-share"];
     }
+    const stale = document.getElementById("other-note");
+    if (stale) stale.remove();
     return;
   }
   card.hidden = false;
@@ -197,6 +270,7 @@ function renderShareChart() {
   const options = baseOptions("kg");
   options.scales.y.stacked = true;
   options.scales.x.stacked = true;
+  options.plugins = { tooltip: { callbacks: { afterBody: shareTooltipAfterBody } } };
 
   const colors = assignCountryColors(group.countries.map((c) => c.name));
   drawChart("chart-share", {
@@ -211,6 +285,7 @@ function renderShareChart() {
     },
     options,
   });
+  renderOtherNote();
 }
 
 function tableMatrix() {
@@ -358,5 +433,7 @@ if (typeof window !== "undefined") {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { assignCountryColors, shouldHideShareChart, renderShareChart,
                       state, COUNTRY_COLORS, TOTAL_COLOR, OTHER_COLOR,
-                      isDataStale, STALENESS_THRESHOLD_DAYS };
+                      isDataStale, STALENESS_THRESHOLD_DAYS,
+                      shareTooltipAfterBody, findOtherOutlier, renderOtherNote,
+                      activeGroup };
 }
