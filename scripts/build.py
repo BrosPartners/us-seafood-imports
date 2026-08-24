@@ -15,12 +15,14 @@ import csv
 import datetime
 import json
 import os
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 import yaml
 
 from scripts import console
+from scripts.fetch import month_range
 
 DEFAULT_INPUT = os.path.join("data", "trade_imports.csv")
 DEFAULT_CONFIG = "products.yml"
@@ -34,6 +36,7 @@ class Group:
     label: str
     product: str
     countries: list = field(default_factory=list)
+    known_absent: list = field(default_factory=list)
 
 
 def load_config(path):
@@ -41,8 +44,66 @@ def load_config(path):
         raw = yaml.safe_load(fh)
     return [Group(key=item["key"], label=item["label"],
                   product=item["product"],
-                  countries=list(item.get("countries") or []))
+                  countries=list(item.get("countries") or []),
+                  known_absent=list(item.get("known_absent") or []))
             for item in raw]
+
+
+class ConfigValidationError(ValueError):
+    """products.yml có mục cấu hình không khớp dữ liệu thật.
+
+    Raise thay vì âm thầm trả series toàn số 0 — một `product` gõ sai
+    chính tả (vd. NOAA đổi tên) sẽ khiến cả nhóm biến mất khỏi dashboard
+    mà không ai biết, nếu không có kiểm tra này.
+    """
+
+
+def validate_config(rows, groups):
+    """Đối chiếu products.yml với dữ liệu thật, raise ConfigValidationError
+    nêu đích danh mọi vấn đề nếu có (không dừng ở lỗi đầu tiên).
+
+    - `product` không xuất hiện dòng nào trong dữ liệu -> lỗi.
+    - Một `country` trong `countries` không có dòng nào cho `product` đó,
+      xuyên suốt toàn bộ lịch sử -> lỗi, TRỪ KHI nước đó có mặt trong
+      `known_absent` của chính nhóm.
+    - `known_absent` liệt kê một nước không thực sự nằm trong `countries`
+      -> lỗi (known_absent chỉ có nghĩa khi nước đó được tách riêng).
+    - `known_absent` liệt kê một nước mà thực tế CÓ dữ liệu -> lỗi (danh
+      sách known_absent đã lỗi thời, phải gỡ entry đó ra).
+    """
+    products_seen = {r["product"] for r in rows}
+    pairs_seen = {(r["product"], r["country"]) for r in rows}
+
+    errors = []
+    for g in groups:
+        if g.product not in products_seen:
+            errors.append(
+                f"Nhóm '{g.key}': product '{g.product}' không xuất hiện "
+                "dòng nào trong dữ liệu (kiểm tra NOAA có đổi tên không).")
+            continue
+
+        for country in g.known_absent:
+            if country not in g.countries:
+                errors.append(
+                    f"Nhóm '{g.key}': known_absent liệt kê '{country}' "
+                    "nhưng nước này không có trong countries.")
+
+        for country in g.countries:
+            present = (g.product, country) in pairs_seen
+            declared_absent = country in g.known_absent
+            if not present and not declared_absent:
+                errors.append(
+                    f"Nhóm '{g.key}': country '{country}' không có dòng "
+                    f"nào cho product '{g.product}' trong toàn bộ lịch sử "
+                    "và không nằm trong known_absent.")
+            if present and declared_absent:
+                errors.append(
+                    f"Nhóm '{g.key}': known_absent liệt kê '{country}' "
+                    "nhưng nước này THỰC SỰ có dữ liệu — gỡ khỏi "
+                    "known_absent trong products.yml.")
+
+    if errors:
+        raise ConfigValidationError("\n".join(errors))
 
 
 def read_rows(path):
@@ -62,7 +123,18 @@ def asp(value, volume):
 
 
 def build(rows, groups, generated_at):
-    months = sorted({f"{r['year']}-{r['month']}" for r in rows})
+    present = sorted({f"{r['year']}-{r['month']}" for r in rows})
+    if present:
+        first_year, first_month = (int(x) for x in present[0].split("-"))
+        last_year, last_month = (int(x) for x in present[-1].split("-"))
+        months = [f"{y}-{m}" for y, m in
+                  month_range(last_year, last_month, first_year, first_month)]
+    else:
+        months = []
+    # Trục tháng liền mạch từ tháng sớm nhất tới muộn nhất CÓ DỮ LIỆU, kể cả
+    # tháng NOAA không công bố gì ở giữa — tháng đó vẫn xuất hiện trên trục
+    # với volume/value = 0 và asp = None (khoảng trống thấy được), thay vì
+    # biến mất hoàn toàn khỏi biểu đồ.
     index = {m: i for i, m in enumerate(months)}
     n = len(months)
 
@@ -141,6 +213,12 @@ def main(argv=None):
 
     rows = read_rows(args.input)
     groups = load_config(args.config)
+    try:
+        validate_config(rows, groups)
+    except ConfigValidationError as exc:
+        print("LỖI: products.yml không khớp dữ liệu thật:", file=sys.stderr)
+        print(str(exc), file=sys.stderr)
+        return 1
     payload = build(rows, groups,
                     datetime.date.today().isoformat())
 

@@ -20,10 +20,17 @@ DEFAULT_OUTPUT = os.path.join("data", "trade_imports.csv")
 SHRINK_TOLERANCE = 0.20
 
 
-def month_range(end_year, end_month):
-    """Trả list ("YYYY", "MM") từ 2023-01 tới end_year/end_month, đã zero-pad."""
+def month_range(end_year, end_month, start_year=START_YEAR, start_month=START_MONTH):
+    """Trả list ("YYYY", "MM") từ start_year/start_month tới end_year/end_month,
+    đã zero-pad, không bỏ sót tháng nào ở giữa.
+
+    Mặc định bắt đầu từ 2023-01 (dùng khi kéo dữ liệu NOAA). scripts/build.py
+    tái dùng hàm này với start_year/start_month khác (tháng sớm nhất thực
+    sự có trong dữ liệu) để lấp các tháng NOAA bỏ trống ở giữa lịch sử
+    thành khoảng trống hiển thị được, thay vì biến mất khỏi trục thời gian.
+    """
     months = []
-    year, month = START_YEAR, START_MONTH
+    year, month = start_year, start_month
     while (year, month) <= (end_year, end_month):
         months.append((str(year), f"{month:02d}"))
         month += 1

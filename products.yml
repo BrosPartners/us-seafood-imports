@@ -5,6 +5,13 @@
 # product  — phải trùng TUYỆT ĐỐI trường `name` của NOAA, kể cả dấu chấm và ngoặc.
 # countries — danh sách nước muốn tách riêng. Phần còn lại gộp vào dòng "Other".
 #             Để trống thì nhóm đó không có breakdown và không có dòng "Other".
+# known_absent — nước nằm trong `countries` nhưng CHƯA TỪNG có dòng dữ liệu nào
+#             cho product đó trong toàn bộ lịch sử đã kéo về. Khai báo ở đây để
+#             build.py biết đây là zero-row CHỦ Ý (giữ layout gốc từ file Excel),
+#             không phải dấu hiệu NOAA đổi tên/gõ sai — build sẽ KHÔNG fail vì
+#             thiếu dữ liệu ở nước này. build.py tự kiểm tra ngược: nếu nước
+#             trong known_absent bắt đầu CÓ dữ liệu thật, build sẽ fail để nhắc
+#             gỡ entry đó ra (đừng để known_absent lỗi thời).
 
 - key: tilapia
   label: Tilapia
@@ -15,6 +22,7 @@
   label: Pangasius (cá tra)
   product: "CATFISH (PANGASIUS) FILLET FROZEN"
   countries: [VIETNAM, TAIWAN]
+  known_absent: [TAIWAN]
 
 - key: haddock
   label: Haddock
@@ -35,3 +43,4 @@
   label: Pollock Alaska
   product: "GROUNDFISH POLLOCK ALASKA FILLET FROZEN"
   countries: [CHINA, INDONESIA, UNITED KINGDOM, CANADA, ICELAND, ECUADOR, GREENLAND, VIETNAM]
+  known_absent: [UNITED KINGDOM, ECUADOR, GREENLAND]

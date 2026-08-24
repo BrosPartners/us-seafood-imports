@@ -86,7 +86,9 @@ def test_total_volume_sums_every_group():
     assert out["total_volume"] == [107]
 
 
-def test_months_are_sorted_and_zero_padded():
+def test_months_are_sorted_and_contiguous_from_earliest_to_latest():
+    """Trục tháng phải liền mạch từ tháng sớm nhất tới muộn nhất có dữ liệu,
+    kể cả khi input không theo thứ tự — không chỉ liệt kê các tháng có mặt."""
     data = rows(
         ("2024", "01", TILAPIA, "CHINA", 1, 1),
         ("2023", "12", TILAPIA, "CHINA", 1, 1),
@@ -95,7 +97,10 @@ def test_months_are_sorted_and_zero_padded():
 
     out = build.build(data, [group(countries=[])], "2026-08-24")
 
-    assert out["months"] == ["2023-02", "2023-12", "2024-01"]
+    assert out["months"] == [
+        "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07",
+        "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01",
+    ]
     assert out["latest_period"] == "2024-01"
 
 
@@ -122,3 +127,79 @@ def test_load_config_reads_products_yml():
     assert groups[0].product == TILAPIA
     assert groups[3].countries == []
     assert "VIETNAM" in groups[1].countries
+
+
+def test_load_config_reads_known_absent():
+    groups = build.load_config("products.yml")
+    by_key = {g.key: g for g in groups}
+
+    assert by_key["pangasius"].known_absent == ["TAIWAN"]
+    assert set(by_key["pollock"].known_absent) == {
+        "UNITED KINGDOM", "ECUADOR", "GREENLAND"}
+    assert by_key["tilapia"].known_absent == []
+
+
+def test_interior_month_missing_from_data_still_appears_zeroed_on_axis():
+    """NOAA bỏ tháng 03 giữa 02 và 04 — tháng đó phải vẫn xuất hiện trên
+    trục thời gian, khối lượng = 0, asp = None (khoảng trống thấy được),
+    không phải biến mất khỏi biểu đồ."""
+    data = rows(
+        ("2023", "02", TILAPIA, "CHINA", 100, 400),
+        ("2023", "04", TILAPIA, "CHINA", 50, 200),
+    )
+
+    out = build.build(data, [group(countries=[])], "2026-08-24")
+
+    assert out["months"] == ["2023-02", "2023-03", "2023-04"]
+    tilapia = out["groups"][0]
+    assert tilapia["volume"] == [100, 0, 50]
+    assert tilapia["asp"][1] is None
+
+
+def test_validate_config_fails_on_product_not_in_data():
+    data = rows(("2023", "01", TILAPIA, "CHINA", 1, 1))
+    bad_group = group(product="NO SUCH PRODUCT")
+
+    with pytest.raises(build.ConfigValidationError, match="NO SUCH PRODUCT"):
+        build.validate_config(data, [bad_group])
+
+
+def test_validate_config_fails_on_country_missing_from_data():
+    data = rows(("2023", "01", TILAPIA, "CHINA", 1, 1))
+    bad_group = group(countries=["HONDURAS"])
+
+    with pytest.raises(build.ConfigValidationError, match="HONDURAS"):
+        build.validate_config(data, [bad_group])
+
+
+def test_validate_config_allows_known_absent_country():
+    data = rows(("2023", "01", TILAPIA, "CHINA", 1, 1))
+    ok_group = group(countries=["CHINA", "HONDURAS"])
+    ok_group.known_absent = ["HONDURAS"]
+
+    build.validate_config(data, [ok_group])  # không raise
+
+
+def test_validate_config_fails_when_known_absent_actually_has_data():
+    data = rows(("2023", "01", TILAPIA, "HONDURAS", 1, 1))
+    stale_group = group(countries=["HONDURAS"])
+    stale_group.known_absent = ["HONDURAS"]
+
+    with pytest.raises(build.ConfigValidationError, match="HONDURAS"):
+        build.validate_config(data, [stale_group])
+
+
+def test_validate_config_fails_when_known_absent_not_in_countries():
+    data = rows(("2023", "01", TILAPIA, "CHINA", 1, 1))
+    bad_group = group(countries=["CHINA"])
+    bad_group.known_absent = ["HONDURAS"]
+
+    with pytest.raises(build.ConfigValidationError, match="HONDURAS"):
+        build.validate_config(data, [bad_group])
+
+
+def test_validate_config_passes_against_real_committed_data():
+    rows_real = build.read_rows("data/trade_imports.csv")
+    groups_real = build.load_config("products.yml")
+
+    build.validate_config(rows_real, groups_real)  # không raise
