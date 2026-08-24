@@ -961,7 +961,7 @@ Tạo `tests/make_golden.py`:
 ```python
 """Trích fixture golden từ file Excel gốc. Chạy một lần, kết quả commit vào repo.
 
-    python tests/make_golden.py "D:/BP/Bros Partners/Tickers/VHC/Important file VHC/giá cá nhập khẩu US - (final).xlsx"
+    python tests/make_golden.py "<đường dẫn tới file giá cá nhập khẩu US - (final).xlsx>"
 
 Input golden lấy từ Sheet1 (dữ liệu thô), expected lấy từ Sheet2 (giá trị đã
 tính sẵn trong Excel). build.py phải tự đi từ cái thứ nhất tới cái thứ hai.
@@ -1102,7 +1102,7 @@ if __name__ == "__main__":
 
 ```bash
 python -m pip install openpyxl
-python tests/make_golden.py "D:/BP/Bros Partners/Tickers/VHC/Important file VHC/giá cá nhập khẩu US - (final).xlsx"
+python tests/make_golden.py "<đường dẫn tới file giá cá nhập khẩu US - (final).xlsx>"
 ```
 
 Expected: khoảng `2530 dòng`, `40 tháng, 6 nhóm`, `Khoảng thời gian: 2023-01 -> 2026-04`.

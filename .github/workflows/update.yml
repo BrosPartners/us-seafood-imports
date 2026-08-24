@@ -1,0 +1,60 @@
+name: Cập nhật dữ liệu NOAA
+
+on:
+  schedule:
+    # 22:00 UTC hằng ngày = 05:00 giờ Việt Nam hôm sau.
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      # fetch.py tự dừng và trả mã lỗi nếu NOAA trả dữ liệu teo bất thường,
+      # nên file cũ không bao giờ bị ghi đè bằng dữ liệu hỏng.
+      - name: Kéo dữ liệu NOAA
+        run: python -m scripts.fetch
+
+      - name: Dựng dashboard.json
+        run: python -m scripts.build
+
+      - name: Chạy test golden
+        run: python -m pytest -v
+
+      - name: Commit nếu dữ liệu thay đổi
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # dashboard.json luôn khác nhau giữa các lần chạy (generated_at đổi theo ngày),
+          # nên không thể dùng nó để xét "dữ liệu có đổi không". trade_imports.csv mới
+          # là nguồn dữ liệu gốc từ NOAA: nó chỉ đổi khi NOAA thật sự công bố số mới.
+          # Lưu ý: `git diff --quiet -- <path>` KHÔNG phát hiện file chưa từng được
+          # track — file untracked không xuất hiện trong git diff nên lệnh này vẫn
+          # trả về 0 (giống hệt). Điều đó không sao ở đây vì data/trade_imports.csv
+          # đã được commit sẵn trong repo từ trước, nên nhánh "file chưa track" không
+          # áp dụng cho job này.
+          if git diff --quiet -- data/trade_imports.csv; then
+            echo "Dữ liệu không đổi, không commit."
+            git checkout -- data/
+            exit 0
+          fi
+          LATEST=$(python -c "import json;print(json.load(open('data/dashboard.json'))['latest_period'])")
+          git add data/
+          git commit -m "data: cập nhật NOAA tới $LATEST"
+          git pull --rebase origin main
+          git push

@@ -1,0 +1,407 @@
+{
+ "items": [
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5520",
+   "cntry_name": "VIETNAM",
+   "continent": "ASIA",
+   "fao": "704",
+   "custom_district_code": "52",
+   "custom_district_name": "MIAMI, FL",
+   "edible_code": "E",
+   "kilos": 22901,
+   "val": 25029,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "SA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSyAAd"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5600",
+   "cntry_name": "INDONESIA",
+   "continent": "ASIA",
+   "fao": "360",
+   "custom_district_code": "52",
+   "custom_district_name": "MIAMI, FL",
+   "edible_code": "E",
+   "kilos": 0,
+   "val": 372228,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "SA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSzAAA"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5700",
+   "cntry_name": "CHINA",
+   "continent": "ASIA",
+   "fao": "156",
+   "custom_district_code": "52",
+   "custom_district_name": "MIAMI, FL",
+   "edible_code": "E",
+   "kilos": 98192,
+   "val": 646926,
+   "source": "IMP",
+   "association": "APEC, CCAMLR, ICCAT",
+   "rfmo": "CCAMLR",
+   "nmfs_region_code": "SA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSzAAB"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5520",
+   "cntry_name": "VIETNAM",
+   "continent": "ASIA",
+   "fao": "704",
+   "custom_district_code": "53",
+   "custom_district_name": "HOUSTON-GALVESTON, TX",
+   "edible_code": "E",
+   "kilos": 252182,
+   "val": 1197410,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "GU",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSzAAC"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5600",
+   "cntry_name": "INDONESIA",
+   "continent": "ASIA",
+   "fao": "360",
+   "custom_district_code": "53",
+   "custom_district_name": "HOUSTON-GALVESTON, TX",
+   "edible_code": "E",
+   "kilos": 67939,
+   "val": 501808,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "GU",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSzAAD"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5700",
+   "cntry_name": "CHINA",
+   "continent": "ASIA",
+   "fao": "156",
+   "custom_district_code": "53",
+   "custom_district_name": "HOUSTON-GALVESTON, TX",
+   "edible_code": "E",
+   "kilos": 94968,
+   "val": 167435,
+   "source": "IMP",
+   "association": "APEC, CCAMLR, ICCAT",
+   "rfmo": "CCAMLR",
+   "nmfs_region_code": "GU",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYSzAAE"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5520",
+   "cntry_name": "VIETNAM",
+   "continent": "ASIA",
+   "fao": "704",
+   "custom_district_code": "10",
+   "custom_district_name": "NEW YORK, NY",
+   "edible_code": "E",
+   "kilos": 19315,
+   "val": 20022,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAU"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5600",
+   "cntry_name": "INDONESIA",
+   "continent": "ASIA",
+   "fao": "360",
+   "custom_district_code": "10",
+   "custom_district_name": "NEW YORK, NY",
+   "edible_code": "E",
+   "kilos": 101406,
+   "val": 744456,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAV"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5700",
+   "cntry_name": "CHINA",
+   "continent": "ASIA",
+   "fao": "156",
+   "custom_district_code": "10",
+   "custom_district_name": "NEW YORK, NY",
+   "edible_code": "E",
+   "kilos": 777440,
+   "val": 1761962,
+   "source": "IMP",
+   "association": "APEC, CCAMLR, ICCAT",
+   "rfmo": "CCAMLR",
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAW"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5830",
+   "cntry_name": "TAIWAN",
+   "continent": "ASIA",
+   "fao": "909",
+   "custom_district_code": "10",
+   "custom_district_name": "NEW YORK, NY",
+   "edible_code": "E",
+   "kilos": 21992,
+   "val": 177631,
+   "source": "IMP",
+   "association": "APEC",
+   "rfmo": null,
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAX"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5520",
+   "cntry_name": "VIETNAM",
+   "continent": "ASIA",
+   "fao": "704",
+   "custom_district_code": "13",
+   "custom_district_name": "BALTIMORE, MD",
+   "edible_code": "E",
+   "kilos": 130474,
+   "val": 513868,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAY"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5700",
+   "cntry_name": "CHINA",
+   "continent": "ASIA",
+   "fao": "156",
+   "custom_district_code": "13",
+   "custom_district_name": "BALTIMORE, MD",
+   "edible_code": "E",
+   "kilos": 487743,
+   "val": 1340164,
+   "source": "IMP",
+   "association": "APEC, CCAMLR, ICCAT",
+   "rfmo": "CCAMLR",
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAZ"
+    }
+   ]
+  },
+  {
+   "year": "2026",
+   "month": "04",
+   "hts_number": "0304610000",
+   "name": "TILAPIA (OREOCHROMIS SPP.) FILLET FROZEN",
+   "fus_group_code1": "E1",
+   "fus_group_code2": "0423",
+   "fus_group1": "F/F, FILLET/STEAK, FRESHWATER",
+   "fus_group2": "TILAPIA",
+   "cntry_code": "5520",
+   "cntry_name": "VIETNAM",
+   "continent": "ASIA",
+   "fao": "704",
+   "custom_district_code": "14",
+   "custom_district_name": "NORFOLK, VA",
+   "edible_code": "E",
+   "kilos": 19976,
+   "val": 116640,
+   "source": "IMP",
+   "association": "APEC, ASEAN",
+   "rfmo": null,
+   "nmfs_region_code": "MA",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/AAFeArABTAAAYT9AAa"
+    }
+   ]
+  }
+ ],
+ "hasMore": false,
+ "limit": 25,
+ "offset": 25,
+ "count": 13,
+ "links": [
+  {
+   "rel": "self",
+   "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/?q=%7B%22year%22:+%222026%22%2C+%22month%22:+%2204%22%2C+%22source%22:+%22IMP%22%2C+%22name%22:+%22TILAPIA+%28OREOCHROMIS+SPP.%29+FILLET+FROZEN%22%7D"
+  },
+  {
+   "rel": "edit",
+   "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/?q=%7B%22year%22:+%222026%22%2C+%22month%22:+%2204%22%2C+%22source%22:+%22IMP%22%2C+%22name%22:+%22TILAPIA+%28OREOCHROMIS+SPP.%29+FILLET+FROZEN%22%7D"
+  },
+  {
+   "rel": "describedby",
+   "href": "https://apps-st.fisheries.noaa.gov/ods/foss/metadata-catalog/trade_data/"
+  },
+  {
+   "rel": "first",
+   "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/?q=%7B%22year%22:+%222026%22%2C+%22month%22:+%2204%22%2C+%22source%22:+%22IMP%22%2C+%22name%22:+%22TILAPIA+%28OREOCHROMIS+SPP.%29+FILLET+FROZEN%22%7D"
+  },
+  {
+   "rel": "prev",
+   "href": "https://apps-st.fisheries.noaa.gov/ods/foss/trade_data/?q=%7B%22year%22:+%222026%22%2C+%22month%22:+%2204%22%2C+%22source%22:+%22IMP%22%2C+%22name%22:+%22TILAPIA+%28OREOCHROMIS+SPP.%29+FILLET+FROZEN%22%7D"
+  }
+ ]
+}
