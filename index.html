@@ -18,22 +18,54 @@
 <main>
   <section class="kpi-row" id="kpi-row"></section>
 
-  <section class="card">
-    <h2>Sản lượng theo tháng</h2>
+  <section class="card" id="master-summary-card">
+    <h2>So sánh các nhóm — kỳ gần nhất</h2>
+    <div class="table-wrap"><table id="master-table"></table></div>
+    <p class="master-hint" id="master-spread-hint">Cột cuối là chênh lệch giá so với cá tra: số dương nghĩa là loài đó đang đắt hơn cá tra.</p>
+  </section>
+
+  <section class="card" id="master-asp-card">
+    <div class="card-head">
+      <h2>Giá bình quân theo nhóm (ASP, USD/kg)</h2>
+      <button type="button" class="btn btn-chart-csv" data-chart="chart-master-asp">Tải CSV</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-master-asp"></canvas></div>
+  </section>
+
+  <section class="card" id="master-spread-card">
+    <div class="card-head">
+      <h2>Chênh lệch giá so với cá tra (USD/kg)</h2>
+      <button type="button" class="btn btn-chart-csv" data-chart="chart-master-spread">Tải CSV</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-master-spread"></canvas></div>
+    <p class="master-hint">Nhấn vào tên loài trong chú giải để ẩn đường đó — trục sẽ tự co giãn lại theo các loài còn hiển thị.</p>
+  </section>
+
+  <section class="card" id="volume-card">
+    <div class="card-head">
+      <h2>Sản lượng theo tháng</h2>
+      <button type="button" class="btn btn-chart-csv" data-chart="chart-volume">Tải CSV</button>
+    </div>
     <div class="chart-wrap"><canvas id="chart-volume"></canvas></div>
   </section>
 
-  <section class="card">
-    <h2>Giá bình quân (ASP, USD/kg)</h2>
+  <section class="card" id="asp-card">
+    <div class="card-head">
+      <h2>Giá bình quân (ASP, USD/kg)</h2>
+      <button type="button" class="btn btn-chart-csv" data-chart="chart-asp">Tải CSV</button>
+    </div>
     <div class="chart-wrap"><canvas id="chart-asp"></canvas></div>
   </section>
 
   <section class="card" id="share-card">
-    <h2>Thị phần theo nước (sản lượng)</h2>
+    <div class="card-head">
+      <h2>Thị phần theo nước (sản lượng)</h2>
+      <button type="button" class="btn btn-chart-csv" data-chart="chart-share">Tải CSV</button>
+    </div>
     <div class="chart-wrap"><canvas id="chart-share"></canvas></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="detail-card">
     <div class="card-head">
       <h2>Số liệu chi tiết</h2>
       <button type="button" id="export-csv" class="btn">Tải CSV</button>

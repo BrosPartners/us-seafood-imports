@@ -99,6 +99,12 @@ body {
 
 .card-head h2 { margin-bottom: 0; }
 
+/* card-head đã có sẵn cho card bảng chi tiết; các card chart giờ dùng chung.
+   Khoảng cách dưới bằng đúng margin cũ của h2 để bố cục không xô lệch.
+   #detail-card loại trừ vì layout cũ của nó chỉ dùng .table-wrap margin-top,
+   không cần margin-bottom thêm vào .card-head. */
+.card:not(#detail-card) > .card-head { margin-bottom: 14px; }
+
 .chart-wrap { position: relative; height: 320px; }
 
 .btn {
@@ -183,3 +189,19 @@ thead th { color: var(--text-tertiary); font-weight: 600; font-size: var(--text-
   margin-top: var(--section-gap);
   font-size: var(--text-body-sm);
 }
+
+/* Dòng cá tra trong bảng master là mốc so sánh của cả tab — tô nhẹ để mắt
+   luôn quay về được, không tô đậm quá kẻo lấn át các dòng còn lại. */
+#master-table tr.row-base td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.master-hint {
+  margin: 10px 0 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-body-sm);
+}
+
+/* hidden mặc định bị display:table/flex của các quy tắc khác đè mất. */
+[hidden] { display: none !important; }
