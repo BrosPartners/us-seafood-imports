@@ -383,6 +383,86 @@ function renderLoadErrorCard(detail) {
   document.body.prepend(card);
 }
 
+/* ============================================================
+   Tab "Tổng hợp" — phần tính toán thuần, không đụng DOM.
+   Tách riêng để test được qua Node (xem tests/test_master_tab.py).
+   ============================================================ */
+
+const MASTER_KEY = "master";
+const MASTER_LABEL = "Tổng hợp";
+
+// Nhóm mốc của cả tab: mọi chênh lệch đều tính so với cá tra.
+const BASE_GROUP_KEY = "pangasius";
+
+// Sáu màu cố định cho sáu nhóm. Dùng CHUNG cho cả chart ASP và chart
+// chênh lệch — nếu hai chart tô khác nhau thì người đọc phải học lại bảng
+// màu mỗi lần chuyển mắt.
+const GROUP_COLORS = ["--data-1", "--data-2", "--data-3",
+                      "--data-4", "--data-5", "--data-6"];
+
+function assignGroupColors(groupKeys) {
+  const map = {};
+  groupKeys.forEach((key, i) => {
+    map[key] = GROUP_COLORS[i % GROUP_COLORS.length];
+  });
+  return map;
+}
+
+/** Biến động tương đối. Trả null nếu thiếu số liệu hoặc mẫu số bằng 0. */
+function pctChange(current, previous) {
+  if (current === null || current === undefined) return null;
+  if (previous === null || previous === undefined) return null;
+  if (previous === 0) return null;
+  return current / previous - 1;
+}
+
+/**
+ * Biến động của `series[index]` so với `series[index - lag]`.
+ * lag = 1 cho MoM, lag = 12 cho YoY. Chưa đủ lịch sử thì trả null,
+ * KHÔNG trả 0 — không có dữ liệu khác với không thay đổi.
+ */
+function changeAt(series, index, lag) {
+  const previousIndex = index - lag;
+  if (previousIndex < 0) return null;
+  return pctChange(series[index], series[previousIndex]);
+}
+
+/** asp[nhóm] − asp[cá tra] theo từng tháng. Thiếu một đầu thì null. */
+function spreadSeries(groupAsp, baseAsp) {
+  return groupAsp.map((value, i) => {
+    const base = baseAsp[i];
+    if (value === null || value === undefined) return null;
+    if (base === null || base === undefined) return null;
+    return value - base;
+  });
+}
+
+/** Sáu dòng của bảng tóm tắt, theo đúng thứ tự nhóm trong dashboard.json. */
+function masterSummaryRows(data) {
+  const last = data.months.length - 1;
+  const base = data.groups.find((g) => g.key === BASE_GROUP_KEY);
+  const baseAsp = base ? base.asp[last] : null;
+
+  return data.groups.map((group) => {
+    const asp = group.asp[last];
+    const spread = (asp === null || asp === undefined ||
+                    baseAsp === null || baseAsp === undefined)
+      ? null
+      : asp - baseAsp;
+    return {
+      key: group.key,
+      label: group.label,
+      volume: group.volume[last],
+      volumeMom: changeAt(group.volume, last, 1),
+      volumeYoy: changeAt(group.volume, last, 12),
+      asp: asp,
+      aspMom: changeAt(group.asp, last, 1),
+      aspYoy: changeAt(group.asp, last, 12),
+      spread: spread,
+    };
+  });
+}
+
 function render() {
   renderTabs();
   renderKpis();
@@ -435,5 +515,8 @@ if (typeof module !== "undefined" && module.exports) {
                       state, COUNTRY_COLORS, TOTAL_COLOR, OTHER_COLOR,
                       isDataStale, STALENESS_THRESHOLD_DAYS,
                       shareTooltipAfterBody, findOtherOutlier, renderOtherNote,
-                      activeGroup };
+                      activeGroup,
+                      MASTER_KEY, MASTER_LABEL, BASE_GROUP_KEY, GROUP_COLORS,
+                      assignGroupColors, pctChange, changeAt, spreadSeries,
+                      masterSummaryRows };
 }
