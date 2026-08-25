@@ -473,15 +473,29 @@ const MASTER_LABEL = "Tổng hợp";
 // Nhóm mốc của cả tab: mọi chênh lệch đều tính so với cá tra.
 const BASE_GROUP_KEY = "pangasius";
 
-// Sáu màu cố định cho sáu nhóm. Dùng CHUNG cho cả chart ASP và chart
+// Bảy màu cố định cho các nhóm. Dùng CHUNG cho cả chart ASP và chart
 // chênh lệch — nếu hai chart tô khác nhau thì người đọc phải học lại bảng
-// màu mỗi lần chuyển mắt.
+// màu mỗi lần chuyển mắt. 7 màu đủ cho 6 nhóm hiện có và chừa một chỗ
+// trước khi phải lặp màu nếu products.yml thêm nhóm thứ 7.
 const GROUP_COLORS = ["--data-1", "--data-2", "--data-3",
-                      "--data-4", "--data-5", "--data-6"];
+                      "--data-4", "--data-5", "--data-6", "--data-7"];
 
+/**
+ * Gán màu cho danh sách nhóm theo thứ tự trong data.groups. Hàm thuần,
+ * cùng quy ước với assignCountryColors: nếu số nhóm vượt quá số màu trong
+ * palette, việc lặp màu là có thật — cảnh báo ra console để lộ ra khi phát
+ * triển (vd thêm nhóm thứ 8 trong products.yml), nhưng vẫn trả về màu hợp
+ * lệ cho mọi nhóm để trang không vỡ.
+ */
 function assignGroupColors(groupKeys) {
   const map = {};
   groupKeys.forEach((key, i) => {
+    if (i >= GROUP_COLORS.length) {
+      console.warn(
+        `assignGroupColors: ${groupKeys.length} nhóm vượt quá ` +
+        `${GROUP_COLORS.length} màu trong palette — màu sẽ bị lặp lại.`
+      );
+    }
     map[key] = GROUP_COLORS[i % GROUP_COLORS.length];
   });
   return map;
@@ -514,6 +528,44 @@ function spreadSeries(groupAsp, baseAsp) {
     if (base === null || base === undefined) return null;
     return value - base;
   });
+}
+
+/**
+ * Loài (khác cá tra) có chênh lệch giá TUYỆT ĐỐI nhỏ nhất so với cá tra ở
+ * tháng mới nhất — tức đối thủ cạnh tranh giá gần cá tra nhất. Nhóm không
+ * có ASP tháng mới nhất bị bỏ qua (không được chọn dù chênh lệch cũ nhỏ).
+ * Trả null khi không có nhóm cá tra hoặc không nhóm nào có chênh lệch hợp
+ * lệ ở tháng mới nhất. Trường `yearAgoSpread` CHỈ có mặt khi đã đủ 13
+ * tháng dữ liệu và giá trị 12 tháng trước không null — thiếu thì bỏ hẳn
+ * trường này (không phải null/dấu gạch) để gọi nơi hiển thị dễ kiểm tra.
+ * Hàm thuần, theo cùng phong cách với findOtherOutlier.
+ */
+function findClosestSpreadCompetitor(data) {
+  const base = data.groups.find((g) => g.key === BASE_GROUP_KEY);
+  if (!base) return null;
+  const last = data.months.length - 1;
+
+  let best = null;
+  data.groups.forEach((group) => {
+    if (group.key === BASE_GROUP_KEY) return;
+    const series = spreadSeries(group.asp, base.asp);
+    const latest = series[last];
+    if (latest === null || latest === undefined) return;
+    if (best === null || Math.abs(latest) < Math.abs(best.latestSpread)) {
+      best = { key: group.key, label: group.label, latestSpread: latest, series };
+    }
+  });
+  if (best === null) return null;
+
+  const result = { key: best.key, label: best.label, latestSpread: best.latestSpread };
+  const yearAgoIndex = last - 12;
+  if (yearAgoIndex >= 0) {
+    const yearAgo = best.series[yearAgoIndex];
+    if (yearAgo !== null && yearAgo !== undefined) {
+      result.yearAgoSpread = yearAgo;
+    }
+  }
+  return result;
 }
 
 /** Sáu dòng của bảng tóm tắt, theo đúng thứ tự nhóm trong dashboard.json. */
@@ -593,7 +645,11 @@ function masterChartData(data) {
         data: base.asp.map((v) => (v === null || v === undefined ? null : 0)),
         borderColor: colors[base.key],
         backgroundColor: colors[base.key],
-        borderWidth: 3,
+        // Mảnh và đứt nét (không phải nét liền dày) — mốc 0 không được
+        // nuốt mất các đường chênh lệch gần 0 (vd tilapia ~0,09) vẽ đè
+        // lên nó. Vẫn giữ nhãn/màu riêng để chú giải còn giải thích được.
+        borderWidth: 1,
+        borderDash: [4, 3],
         pointRadius: 0,
         tension: 0,
         spanGaps: false,
@@ -616,10 +672,14 @@ function masterChartData(data) {
 }
 
 function renderMasterTable() {
-  const rows = masterSummaryRows(state.data);
+  const data = state.data;
+  const hasBase = Boolean(data.groups.find((g) => g.key === BASE_GROUP_KEY));
+  const rows = masterSummaryRows(data);
   const header = ["Nhóm", "Sản lượng (kg)", "SL %MoM", "SL %YoY",
-                  "ASP (USD/kg)", "ASP %MoM", "ASP %YoY",
-                  "Chênh lệch vs cá tra"];
+                  "ASP (USD/kg)", "ASP %MoM", "ASP %YoY"];
+  // Không có nhóm cá tra thì mọi giá trị "spread" đều là null — thay vì
+  // hiện cả cột toàn dấu gạch không giải thích được, ẩn hẳn cột này.
+  if (hasBase) header.push("Chênh lệch vs cá tra");
 
   const body = rows.map((row) => {
     const cells = [
@@ -630,8 +690,8 @@ function renderMasterTable() {
       formatUsdPerKg(row.asp),
       formatPct(row.aspMom),
       formatPct(row.aspYoy),
-      formatSpread(row.spread),
     ];
+    if (hasBase) cells.push(formatSpread(row.spread));
     const cls = row.key === BASE_GROUP_KEY ? ' class="row-base"' : "";
     return `<tr${cls}>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
   }).join("");
@@ -650,8 +710,56 @@ function resolveDatasetColors(datasets) {
   }));
 }
 
+/**
+ * Ghi chú giải thích khi thiếu nhóm cá tra (nhóm mốc) — hiện ở khu vực
+ * chung của tab thay cho chart-master-spread rỗng. Không thiếu -> gỡ hẳn
+ * phần tử cũ, không để lại thẻ rỗng (cùng quy ước với renderOtherNote).
+ */
+function renderMasterSpreadMissingNote(hasBase) {
+  const existing = document.getElementById("master-spread-missing-note");
+  if (existing) existing.remove();
+  if (hasBase) return;
+
+  const note = document.createElement("p");
+  note.id = "master-spread-missing-note";
+  note.className = "master-hint";
+  note.textContent =
+    "Không thể tính chênh lệch giá so với cá tra: nhóm cá tra (mốc so " +
+    "sánh) hiện không có trong dữ liệu. Biểu đồ và cột chênh lệch tương " +
+    "ứng đã được ẩn.";
+  document.getElementById("master-summary-card").appendChild(note);
+}
+
+/**
+ * Câu tính sẵn dưới chart-master-spread: loài nào đang cạnh tranh giá gần
+ * cá tra nhất, và so với 12 tháng trước ra sao (nếu có đủ dữ liệu).
+ * Không có cá tra hoặc không tính được -> gỡ hẳn phần tử.
+ */
+function renderMasterSpreadNote(hasBase) {
+  const existing = document.getElementById("master-spread-note");
+  if (existing) existing.remove();
+  if (!hasBase) return;
+
+  const info = findClosestSpreadCompetitor(state.data);
+  if (!info) return;
+
+  let text = `Đối thủ cạnh tranh giá gần cá tra nhất hiện nay là ` +
+    `${info.label}, chênh lệch ${formatSpread(info.latestSpread)} USD/kg.`;
+  if (Object.prototype.hasOwnProperty.call(info, "yearAgoSpread")) {
+    text += ` Cùng kỳ năm trước, chênh lệch này là ` +
+      `${formatSpread(info.yearAgoSpread)} USD/kg.`;
+  }
+
+  const note = document.createElement("p");
+  note.id = "master-spread-note";
+  note.className = "master-hint";
+  note.textContent = text;
+  document.getElementById("master-spread-card").appendChild(note);
+}
+
 function renderMasterCharts() {
   const data = masterChartData(state.data);
+  const hasBase = data.spreadDatasets.length > 0;
 
   drawChart("chart-master-asp", {
     type: "line",
@@ -659,7 +767,21 @@ function renderMasterCharts() {
     options: baseOptions("USD/kg"),
   });
 
-  const spreadOptions = baseOptions("USD/kg");
+  renderMasterSpreadMissingNote(hasBase);
+
+  const spreadCard = document.getElementById("master-spread-card");
+  if (!hasBase) {
+    spreadCard.hidden = true;
+    if (state.charts["chart-master-spread"]) {
+      state.charts["chart-master-spread"].destroy();
+      delete state.charts["chart-master-spread"];
+    }
+    renderMasterSpreadNote(false);
+    return;
+  }
+  spreadCard.hidden = false;
+
+  const spreadOptions = baseOptions("Chênh lệch so với cá tra (USD/kg)");
   // Đường 0 là mốc cá tra — vẽ đậm hơn lưới thường để mắt bắt được ngay.
   spreadOptions.scales.y.grid = {
     color: (ctx) => (ctx.tick.value === 0
@@ -670,6 +792,7 @@ function renderMasterCharts() {
     data: { labels: data.labels, datasets: resolveDatasetColors(data.spreadDatasets) },
     options: spreadOptions,
   });
+  renderMasterSpreadNote(true);
 }
 
 function renderMaster() {
@@ -772,8 +895,10 @@ if (typeof module !== "undefined" && module.exports) {
                       activeGroup,
                       MASTER_KEY, MASTER_LABEL, BASE_GROUP_KEY, GROUP_COLORS,
                       assignGroupColors, pctChange, changeAt, spreadSeries,
-                      masterSummaryRows,
+                      masterSummaryRows, findClosestSpreadCompetitor,
                       formatPct, formatSpread, isMasterActive,
-                      masterChartData, renderMaster,
+                      masterChartData, renderMaster, renderMasterCharts,
+                      renderMasterTable, renderMasterSpreadNote,
+                      renderMasterSpreadMissingNote,
                       toCsv, chartCsvRows, downloadCsv, exportChartCsv };
 }

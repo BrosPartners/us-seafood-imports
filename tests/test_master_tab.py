@@ -311,6 +311,216 @@ def test_chart_csv_rows_for_group_share_has_a_row_per_country():
     assert out["rows"] == out["countries"] + 1
 
 
+def test_find_closest_spread_competitor_is_tilapia_with_real_data():
+    out = run_node("""
+        console.log(JSON.stringify(app.findClosestSpreadCompetitor(DASHBOARD)));
+    """)
+
+    assert out["key"] == "tilapia"
+    assert out["latestSpread"] == pytest.approx(0.09, abs=0.02)
+
+
+def test_find_closest_spread_competitor_skips_group_with_null_latest_spread():
+    out = run_node("""
+        const data = {
+          months: ["2026-01", "2026-02"],
+          groups: [
+            { key: "pangasius", label: "Pangasius (cá tra)", asp: [2, 2] },
+            { key: "tilapia", label: "Tilapia", asp: [2.1, null] },
+            { key: "cod", label: "Cod", asp: [5, 6] },
+          ],
+        };
+        console.log(JSON.stringify(app.findClosestSpreadCompetitor(data)));
+    """)
+
+    assert out["key"] == "cod"
+
+
+def test_find_closest_spread_competitor_omits_year_ago_when_fewer_than_13_months():
+    out = run_node("""
+        const months = Array.from({length: 12}, (_, i) => `2025-${String(i + 1).padStart(2, "0")}`);
+        const data = {
+          months,
+          groups: [
+            { key: "pangasius", label: "Pangasius (cá tra)", asp: months.map(() => 2) },
+            { key: "tilapia", label: "Tilapia", asp: months.map(() => 2.1) },
+          ],
+        };
+        const out = app.findClosestSpreadCompetitor(data);
+        console.log(JSON.stringify({
+          hasYearAgo: Object.prototype.hasOwnProperty.call(out, "yearAgoSpread"),
+        }));
+    """)
+
+    assert out["hasYearAgo"] is False
+
+
+def test_find_closest_spread_competitor_includes_year_ago_when_13_months_available():
+    out = run_node("""
+        const months = Array.from({length: 13}, (_, i) => `2025-${String(i + 1).padStart(2, "0")}`);
+        const data = {
+          months,
+          groups: [
+            { key: "pangasius", label: "Pangasius (cá tra)", asp: months.map(() => 2) },
+            { key: "tilapia", label: "Tilapia", asp: months.map((_, i) => 2 + (i === 0 ? 0.3 : 0.1)) },
+          ],
+        };
+        const out = app.findClosestSpreadCompetitor(data);
+        console.log(JSON.stringify({
+          hasYearAgo: Object.prototype.hasOwnProperty.call(out, "yearAgoSpread"),
+          yearAgoSpread: out.yearAgoSpread,
+        }));
+    """)
+
+    assert out["hasYearAgo"] is True
+    assert out["yearAgoSpread"] == pytest.approx(0.3)
+
+
+def test_find_closest_spread_competitor_returns_null_without_base_group():
+    out = run_node("""
+        const data = {
+          months: ["2026-01"],
+          groups: [{ key: "tilapia", label: "Tilapia", asp: [2] }],
+        };
+        console.log(JSON.stringify(app.findClosestSpreadCompetitor(data)));
+    """)
+
+    assert out is None
+
+
+def test_assign_group_colors_extends_to_seven_and_warns_beyond_that():
+    out = run_node("""
+        const keys = ["a", "b", "c", "d", "e", "f", "g", "h"];
+        const originalWarn = console.warn;
+        let warned = false;
+        console.warn = () => { warned = true; };
+        const map = app.assignGroupColors(keys);
+        console.warn = originalWarn;
+        console.log(JSON.stringify({
+          values: keys.map(k => map[k]),
+          warned,
+        }));
+    """)
+
+    values = out["values"]
+    assert all(v is not None for v in values)
+    # 7 màu đầu phải phân biệt nhau (nhóm thứ 7 dùng --data-7 mới).
+    assert len(set(values[:7])) == 7
+    # Nhóm thứ 8 phải lặp lại màu của nhóm thứ 1 (bọc vòng qua 7 màu).
+    assert values[7] == values[0]
+    assert out["warned"] is True
+
+
+def _master_spread_harness(groups_js, extra=""):
+    """DOM/Chart.js stub theo đúng khuôn của _node_harness_for_share_chart
+    trong test_chart_colors.py, chỉ đổi sang các phần tử tab Tổng hợp."""
+    return textwrap.dedent(f"""
+        const notes = {{}};
+        const summaryCard = {{ appendChild: (el) => {{ notes[el.id] = el; }} }};
+        const spreadCard = {{ hidden: false, appendChild: (el) => {{ notes[el.id] = el; }} }};
+        const elements = {{
+          "master-summary-card": summaryCard,
+          "master-spread-card": spreadCard,
+          "master-table": {{ innerHTML: "" }},
+          "chart-master-asp": {{ getContext: () => ({{}}) }},
+          "chart-master-spread": {{ getContext: () => ({{}}) }},
+        }};
+        global.document = {{
+          getElementById: (id) => elements[id] || null,
+          createElement: (tag) => ({{ tagName: tag, remove() {{}} }}),
+        }};
+        global.getComputedStyle = () => ({{ getPropertyValue: () => "#000000" }});
+
+        let instanceCount = 0;
+        global.Chart = function (ctx, cfg) {{
+          instanceCount += 1;
+          this.destroyed = false;
+          this.destroy = () => {{ this.destroyed = true; }};
+        }};
+
+        app.state.data = {{
+          months: ["2025-01", "2026-01"],
+          groups: {groups_js},
+        }};
+        {extra}
+    """)
+
+
+def test_render_master_charts_hides_spread_card_when_base_group_missing():
+    groups_js = """[
+      { key: "tilapia", label: "Tilapia", asp: [2.1, 2.2], countries: [] },
+      { key: "cod", label: "Cod", asp: [5, 6], countries: [] },
+    ]"""
+    script = _master_spread_harness(groups_js) + textwrap.dedent("""
+        app.renderMasterCharts();
+        console.log(JSON.stringify({
+          spreadCardHidden: elements["master-spread-card"].hidden,
+          spreadChartInState: app.state.charts["chart-master-spread"] !== undefined,
+          missingNoteShown: notes["master-spread-missing-note"] !== undefined,
+        }));
+    """)
+    result = run_node(script)
+    assert result["spreadCardHidden"] is True
+    assert result["spreadChartInState"] is False
+    assert result["missingNoteShown"] is True
+
+
+def test_render_master_charts_shows_spread_card_again_after_base_restored():
+    groups_js = """[
+      { key: "pangasius", label: "Pangasius (cá tra)", asp: [2, 2], countries: [] },
+      { key: "tilapia", label: "Tilapia", asp: [2.1, 2.09], countries: [] },
+    ]"""
+    script = _master_spread_harness(groups_js) + textwrap.dedent("""
+        // First render without cá tra: card hidden.
+        app.state.data.groups = [
+          { key: "tilapia", label: "Tilapia", asp: [2.1, 2.2], countries: [] },
+        ];
+        app.renderMasterCharts();
+        const hiddenBefore = elements["master-spread-card"].hidden;
+
+        // Restore cá tra and re-render: card must come back.
+        app.state.data.groups = [
+          { key: "pangasius", label: "Pangasius (cá tra)", asp: [2, 2], countries: [] },
+          { key: "tilapia", label: "Tilapia", asp: [2.1, 2.09], countries: [] },
+        ];
+        app.renderMasterCharts();
+
+        console.log(JSON.stringify({
+          hiddenBefore,
+          hiddenAfterRestore: elements["master-spread-card"].hidden,
+          spreadChartRestored: app.state.charts["chart-master-spread"] !== undefined,
+        }));
+    """)
+    result = run_node(script)
+    assert result["hiddenBefore"] is True
+    assert result["hiddenAfterRestore"] is False
+    assert result["spreadChartRestored"] is True
+
+
+def test_render_master_table_hides_spread_column_when_base_group_missing():
+    # renderMasterTable đọc state.data trực tiếp nên dựng DOM tối giản để
+    # bắt HTML thật rồi kiểm tra header không còn cột "Chênh lệch vs cá tra".
+    script = textwrap.dedent(f"""
+        let capturedHtml = "";
+        const table = {{ set innerHTML(html) {{ capturedHtml = html; }}, get innerHTML() {{ return capturedHtml; }} }};
+        const elements = {{ "master-table": table }};
+        global.document = {{ getElementById: (id) => elements[id] || null }};
+        app.state.data = {{
+          months: ["2026-01"],
+          groups: [
+            {{ key: "tilapia", label: "Tilapia", asp: [2.1], volume: [1], countries: [] }},
+            {{ key: "cod", label: "Cod", asp: [5], volume: [1], countries: [] }},
+          ],
+        }};
+        app.renderMasterTable();
+        console.log(JSON.stringify({{
+          hasSpreadHeader: capturedHtml.includes("Chênh lệch vs cá tra"),
+        }}));
+    """)
+    result = run_node(script)
+    assert result["hasSpreadHeader"] is False
+
+
 def test_chart_csv_rows_keeps_nulls_so_the_export_leaves_blanks():
     out = run_node("""
         const rows = app.chartCsvRows("chart-master-spread", DASHBOARD, "master");
