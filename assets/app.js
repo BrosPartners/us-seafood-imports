@@ -67,13 +67,17 @@ function activeGroup() {
 function renderTabs() {
   const nav = document.getElementById("group-tabs");
   nav.innerHTML = "";
-  state.data.groups.forEach((group) => {
+
+  const entries = [{ key: MASTER_KEY, label: MASTER_LABEL }].concat(
+    state.data.groups.map((g) => ({ key: g.key, label: g.label })));
+
+  entries.forEach((entry) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = group.label;
-    button.setAttribute("aria-pressed", String(group.key === state.activeKey));
+    button.textContent = entry.label;
+    button.setAttribute("aria-pressed", String(entry.key === state.activeKey));
     button.addEventListener("click", () => {
-      state.activeKey = group.key;
+      state.activeKey = entry.key;
       render();
     });
     nav.appendChild(button);
@@ -463,8 +467,179 @@ function masterSummaryRows(data) {
   });
 }
 
+/** Định dạng biến động tương đối: "—" khi thiếu, ngược lại có dấu và %. */
+function formatPct(value) {
+  if (value === null || value === undefined) return "—";
+  const pct = value * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return sign + new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct) + "%";
+}
+
+/** Định dạng chênh lệch USD/kg, luôn kèm dấu để đọc nhanh chiều lệch. */
+function formatSpread(value) {
+  if (value === null || value === undefined) return "—";
+  const sign = value >= 0 ? "+" : "";
+  return sign + new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
+
+function isMasterActive() {
+  return state.activeKey === MASTER_KEY;
+}
+
+/**
+ * Dựng dữ liệu cho hai chart của tab master. Hàm thuần, không đụng DOM —
+ * vì vậy borderColor/backgroundColor ở đây là TÊN biến CSS (vd "--data-1"),
+ * giống quy ước của assignCountryColors, chứ không phải màu đã resolve
+ * (resolve cần getComputedStyle, tức cần document — không có trong Node).
+ * renderMasterCharts() sẽ gọi cssVar() để resolve trước khi vẽ.
+ */
+function masterChartData(data) {
+  const colors = assignGroupColors(data.groups.map((g) => g.key));
+  const base = data.groups.find((g) => g.key === BASE_GROUP_KEY);
+
+  const aspDatasets = data.groups.map((group) => ({
+    label: group.label,
+    data: group.asp,
+    borderColor: colors[group.key],
+    backgroundColor: colors[group.key],
+    borderWidth: group.key === BASE_GROUP_KEY ? 3 : 1.6,
+    pointRadius: 0,
+    tension: 0.25,
+    spanGaps: false,
+  }));
+
+  // Đường mốc 0 mang nhãn của chính cá tra, để legend giải thích được
+  // đường ngang đó là gì thay vì bắt người đọc tự suy ra.
+  const spreadDatasets = base
+    ? [{
+        label: base.label,
+        data: base.asp.map((v) => (v === null || v === undefined ? null : 0)),
+        borderColor: colors[base.key],
+        backgroundColor: colors[base.key],
+        borderWidth: 3,
+        pointRadius: 0,
+        tension: 0,
+        spanGaps: false,
+      }].concat(
+        data.groups
+          .filter((group) => group.key !== BASE_GROUP_KEY)
+          .map((group) => ({
+            label: group.label,
+            data: spreadSeries(group.asp, base.asp),
+            borderColor: colors[group.key],
+            backgroundColor: colors[group.key],
+            borderWidth: 1.6,
+            pointRadius: 0,
+            tension: 0.25,
+            spanGaps: false,
+          })))
+    : [];
+
+  return { labels: data.months, aspDatasets, spreadDatasets };
+}
+
+function renderMasterTable() {
+  const rows = masterSummaryRows(state.data);
+  const header = ["Nhóm", "Sản lượng (kg)", "SL %MoM", "SL %YoY",
+                  "ASP (USD/kg)", "ASP %MoM", "ASP %YoY",
+                  "Chênh lệch vs cá tra"];
+
+  const body = rows.map((row) => {
+    const cells = [
+      row.label,
+      formatInt(row.volume),
+      formatPct(row.volumeMom),
+      formatPct(row.volumeYoy),
+      formatUsdPerKg(row.asp),
+      formatPct(row.aspMom),
+      formatPct(row.aspYoy),
+      formatSpread(row.spread),
+    ];
+    const cls = row.key === BASE_GROUP_KEY ? ' class="row-base"' : "";
+    return `<tr${cls}>${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
+  }).join("");
+
+  document.getElementById("master-table").innerHTML =
+    `<thead><tr>${header.map((h) => `<th>${h}</th>`).join("")}</tr></thead>` +
+    `<tbody>${body}</tbody>`;
+}
+
+/** Resolve tên biến CSS trong dataset thành màu thật, tại thời điểm vẽ. */
+function resolveDatasetColors(datasets) {
+  return datasets.map((ds) => ({
+    ...ds,
+    borderColor: cssVar(ds.borderColor),
+    backgroundColor: cssVar(ds.backgroundColor),
+  }));
+}
+
+function renderMasterCharts() {
+  const data = masterChartData(state.data);
+
+  drawChart("chart-master-asp", {
+    type: "line",
+    data: { labels: data.labels, datasets: resolveDatasetColors(data.aspDatasets) },
+    options: baseOptions("USD/kg"),
+  });
+
+  const spreadOptions = baseOptions("USD/kg");
+  // Đường 0 là mốc cá tra — vẽ đậm hơn lưới thường để mắt bắt được ngay.
+  spreadOptions.scales.y.grid = {
+    color: (ctx) => (ctx.tick.value === 0
+      ? cssVar("--border-strong") : cssVar("--border-hairline")),
+  };
+  drawChart("chart-master-spread", {
+    type: "line",
+    data: { labels: data.labels, datasets: resolveDatasetColors(data.spreadDatasets) },
+    options: spreadOptions,
+  });
+}
+
+function renderMaster() {
+  renderMasterTable();
+  renderMasterCharts();
+}
+
+const MASTER_CARDS = ["master-summary-card", "master-asp-card",
+                      "master-spread-card"];
+const GROUP_CARDS = ["kpi-row", "volume-card", "asp-card", "share-card",
+                     "detail-card"];
+const MASTER_CANVASES = ["chart-master-asp", "chart-master-spread"];
+const GROUP_CANVASES = ["chart-volume", "chart-asp", "chart-share"];
+
+function setHidden(ids, hidden) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = hidden;
+  });
+}
+
+/** Huỷ chart và xoá khỏi state, để không còn instance bám canvas đang ẩn. */
+function destroyCharts(canvasIds) {
+  canvasIds.forEach((id) => {
+    if (state.charts[id]) {
+      state.charts[id].destroy();
+      delete state.charts[id];
+    }
+  });
+}
+
 function render() {
   renderTabs();
+
+  if (isMasterActive()) {
+    setHidden(GROUP_CARDS, true);
+    setHidden(MASTER_CARDS, false);
+    destroyCharts(GROUP_CANVASES);
+    renderMaster();
+    return;
+  }
+
+  setHidden(MASTER_CARDS, true);
+  setHidden(GROUP_CARDS, false);
+  destroyCharts(MASTER_CANVASES);
   renderKpis();
   renderVolumeChart();
   renderAspChart();
@@ -494,7 +669,7 @@ async function init() {
     renderLoadErrorCard("dashboard.json không có nhóm dữ liệu nào");
     return;
   }
-  state.activeKey = state.data.groups[0].key;
+  state.activeKey = MASTER_KEY;
 
   document.getElementById("meta-line").textContent =
     `Dữ liệu tới ${state.data.latest_period} · cập nhật lần cuối ${state.data.generated_at}`;
@@ -518,5 +693,7 @@ if (typeof module !== "undefined" && module.exports) {
                       activeGroup,
                       MASTER_KEY, MASTER_LABEL, BASE_GROUP_KEY, GROUP_COLORS,
                       assignGroupColors, pctChange, changeAt, spreadSeries,
-                      masterSummaryRows };
+                      masterSummaryRows,
+                      formatPct, formatSpread, isMasterActive,
+                      masterChartData, renderMaster };
 }

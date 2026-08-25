@@ -167,3 +167,73 @@ def test_assign_group_colors_is_stable_and_distinct():
     assert out["a"] == out["b"]
     assert len(set(out["values"])) == len(out["values"])
     assert len(out["values"]) == 6
+
+
+def test_format_pct_shows_a_dash_for_null():
+    out = run_node("console.log(JSON.stringify(app.formatPct(null)));")
+
+    assert out == "—"
+
+
+def test_format_pct_signs_both_directions():
+    out = run_node("""
+        console.log(JSON.stringify([app.formatPct(0.068), app.formatPct(-0.011)]));
+    """)
+
+    assert out[0].startswith("+")
+    assert out[1].startswith("-")
+    assert "%" in out[0]
+
+
+def test_format_spread_shows_a_dash_for_null():
+    out = run_node("console.log(JSON.stringify(app.formatSpread(null)));")
+
+    assert out == "—"
+
+
+def test_master_chart_data_has_one_asp_dataset_per_group():
+    out = run_node("""
+        const d = app.masterChartData(DASHBOARD);
+        console.log(JSON.stringify({
+          labels: d.labels.length,
+          asp: d.aspDatasets.map(x => x.label),
+          spread: d.spreadDatasets.map(x => x.label),
+        }));
+    """)
+
+    assert out["labels"] == 42
+    assert len(out["asp"]) == 6
+    # 5 loài còn lại + đường mốc 0 mang nhãn cá tra.
+    assert len(out["spread"]) == 6
+
+
+def test_master_chart_data_uses_the_same_colour_for_a_group_in_both_charts():
+    """Nếu hai chart tô khác màu, người đọc phải học lại bảng màu."""
+    out = run_node("""
+        const d = app.masterChartData(DASHBOARD);
+        const byLabel = {};
+        d.aspDatasets.forEach(x => { byLabel[x.label] = x.borderColor; });
+        console.log(JSON.stringify(d.spreadDatasets.map(x => ({
+          label: x.label, asp: byLabel[x.label], spread: x.borderColor,
+        }))));
+    """)
+
+    assert out
+    for entry in out:
+        assert entry["asp"] == entry["spread"], entry["label"]
+
+
+def test_master_chart_data_keeps_nulls_so_gaps_stay_gaps():
+    """Tháng thiếu ASP phải là null trong dataset, không được thành 0."""
+    out = run_node("""
+        const d = app.masterChartData(DASHBOARD);
+        const flat = d.aspDatasets.concat(d.spreadDatasets)
+          .flatMap(x => x.data);
+        console.log(JSON.stringify({
+          hasNaN: flat.some(v => typeof v === "number" && Number.isNaN(v)),
+          hasUndefined: flat.some(v => v === undefined),
+        }));
+    """)
+
+    assert out["hasNaN"] is False
+    assert out["hasUndefined"] is False
