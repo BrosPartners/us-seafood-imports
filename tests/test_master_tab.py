@@ -237,3 +237,89 @@ def test_master_chart_data_keeps_nulls_so_gaps_stay_gaps():
 
     assert out["hasNaN"] is False
     assert out["hasUndefined"] is False
+
+
+def test_to_csv_quotes_every_cell_and_doubles_inner_quotes():
+    out = run_node("""
+        console.log(JSON.stringify(
+          app.toCsv([["a", 'có "nháy"'], ["b,c", 1]])));
+    """)
+
+    assert out == '"a","có ""nháy"""\n"b,c","1"'
+
+
+def test_to_csv_writes_an_empty_cell_for_null():
+    """null phải thành ô trống, không phải chữ null."""
+    out = run_node("console.log(JSON.stringify(app.toCsv([[null, undefined, 0]])));")
+
+    assert out == '"","","0"'
+
+
+def test_chart_csv_rows_for_master_spread_has_a_row_per_line_plus_header():
+    out = run_node("""
+        const rows = app.chartCsvRows("chart-master-spread", DASHBOARD, "master");
+        console.log(JSON.stringify({
+          rows: rows.length,
+          cols: rows[0].length,
+          first: rows[0][0],
+          labels: rows.slice(1).map(r => r[0]),
+        }));
+    """)
+
+    # 1 dòng tiêu đề + 6 nhóm; dòng cá tra toàn 0 và chính là mốc,
+    # giữ lại trong file để người nhận thấy rõ quy ước so sánh.
+    assert out["rows"] == 7
+    # 1 cột nhãn + 42 tháng
+    assert out["cols"] == 43
+    assert out["first"] == "Nhóm"
+    assert "Pangasius (cá tra)" in out["labels"]
+
+
+def test_chart_csv_rows_for_master_asp_covers_all_six_groups():
+    out = run_node("""
+        const rows = app.chartCsvRows("chart-master-asp", DASHBOARD, "master");
+        console.log(JSON.stringify({rows: rows.length, cols: rows[0].length}));
+    """)
+
+    assert out["rows"] == 7
+    assert out["cols"] == 43
+
+
+def test_chart_csv_rows_for_group_volume_matches_the_plotted_series():
+    out = run_node("""
+        const rows = app.chartCsvRows("chart-volume", DASHBOARD, "pangasius");
+        const g = DASHBOARD.groups.find(x => x.key === "pangasius");
+        console.log(JSON.stringify({
+          rows: rows.length, cols: rows[0].length,
+          same: JSON.stringify(rows[1].slice(1)) === JSON.stringify(g.volume),
+        }));
+    """)
+
+    assert out["rows"] == 2
+    assert out["cols"] == 43
+    assert out["same"] is True
+
+
+def test_chart_csv_rows_for_group_share_has_a_row_per_country():
+    out = run_node("""
+        const rows = app.chartCsvRows("chart-share", DASHBOARD, "cod");
+        const g = DASHBOARD.groups.find(x => x.key === "cod");
+        console.log(JSON.stringify({rows: rows.length, countries: g.countries.length}));
+    """)
+
+    # cod có 8 nước + Other = 9, cộng dòng tiêu đề
+    assert out["rows"] == out["countries"] + 1
+
+
+def test_chart_csv_rows_keeps_nulls_so_the_export_leaves_blanks():
+    out = run_node("""
+        const rows = app.chartCsvRows("chart-master-spread", DASHBOARD, "master");
+        const csv = app.toCsv(rows);
+        console.log(JSON.stringify({
+          hasNullWord: csv.includes('"null"'),
+          hasNaN: csv.includes("NaN"),
+        }));
+    """)
+
+    assert out["hasNullWord"] is False
+    assert out["hasNaN"] is False

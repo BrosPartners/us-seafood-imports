@@ -99,6 +99,10 @@ body {
 
 .card-head h2 { margin-bottom: 0; }
 
+/* card-head đã có sẵn cho card bảng chi tiết; các card chart giờ dùng chung.
+   Khoảng cách dưới bằng đúng margin cũ của h2 để bố cục không xô lệch. */
+.card > .card-head { margin-bottom: 14px; }
+
 .chart-wrap { position: relative; height: 320px; }
 
 .btn {

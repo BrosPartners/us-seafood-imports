@@ -316,27 +316,102 @@ function renderTable() {
       `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 
-function exportCsv() {
-  const group = activeGroup();
-  const lines = [["Chỉ tiêu", ...state.data.months]];
-  lines.push(["Sản lượng (kg)", ...group.volume]);
-  lines.push(["Giá trị (USD)", ...group.value]);
-  lines.push(["ASP (USD/kg)", ...group.asp.map((v) => (v === null ? "" : v))]);
-  group.countries.forEach((country) => {
-    lines.push([`${country.name} — sản lượng (kg)`, ...country.volume]);
-    lines.push([`${country.name} — giá trị (USD)`, ...country.value]);
-  });
+/* ============================================================
+   Xuất CSV dùng chung cho mọi chart và cho bảng chi tiết.
+   ============================================================ */
 
-  const csv = lines.map((row) =>
-    row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-  ).join("\n");
+/** Mọi ô bọc ngoặc kép, ngoặc kép bên trong nhân đôi, null thành ô trống. */
+function toCsv(rows) {
+  return rows.map((row) => row.map((cell) => {
+    const value = (cell === null || cell === undefined) ? "" : String(cell);
+    return `"${value.replace(/"/g, '""')}"`;
+  }).join(",")).join("\n");
+}
 
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+/** Tải một mảng dòng xuống dưới dạng CSV. BOM để Excel không lỗi font. */
+function downloadCsv(filename, rows) {
+  const blob = new Blob(["﻿" + toCsv(rows)],
+                        { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `nhap-khau-my-${group.key}.csv`;
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+/**
+ * Dựng đúng dữ liệu đang vẽ trên một chart thành các dòng CSV.
+ * Hàm thuần: nhận dữ liệu và khoá nhóm, không đọc state, để test được.
+ * Số xuất ở dạng thô — không định dạng theo locale, để dán vào model được.
+ */
+function chartCsvRows(chartId, data, groupKey) {
+  const header = (first) => [first].concat(data.months);
+
+  if (chartId === "chart-master-asp") {
+    const rows = [header("Nhóm")];
+    data.groups.forEach((g) => rows.push([g.label].concat(g.asp)));
+    return rows;
+  }
+
+  if (chartId === "chart-master-spread") {
+    const base = data.groups.find((g) => g.key === BASE_GROUP_KEY);
+    const rows = [header("Nhóm")];
+    if (!base) return rows;
+    data.groups.forEach((g) => rows.push(
+      [g.label].concat(spreadSeries(g.asp, base.asp))));
+    return rows;
+  }
+
+  const group = data.groups.find((g) => g.key === groupKey);
+  if (!group) return [header("Chỉ tiêu")];
+
+  if (chartId === "chart-volume") {
+    return [header("Chỉ tiêu"), ["Sản lượng (kg)"].concat(group.volume)];
+  }
+
+  if (chartId === "chart-asp") {
+    const rows = [header("Chỉ tiêu"), ["Toàn nhóm"].concat(group.asp)];
+    group.countries.forEach((c) => {
+      if (c.name !== OTHER_LABEL) rows.push([c.name].concat(c.asp));
+    });
+    return rows;
+  }
+
+  if (chartId === "chart-share") {
+    const rows = [header("Nước")];
+    group.countries.forEach((c) => rows.push([c.name].concat(c.volume)));
+    return rows;
+  }
+
+  return [header("Chỉ tiêu")];
+}
+
+const CHART_FILE_SLUG = {
+  "chart-master-asp": "asp",
+  "chart-master-spread": "chenh-lech",
+  "chart-volume": "san-luong",
+  "chart-asp": "asp",
+  "chart-share": "thi-phan",
+};
+
+function exportChartCsv(chartId) {
+  const groupKey = isMasterActive() ? MASTER_KEY : state.activeKey;
+  const prefix = isMasterActive() ? "tong-hop" : groupKey;
+  const rows = chartCsvRows(chartId, state.data, groupKey);
+  downloadCsv(`nhap-khau-my-${prefix}-${CHART_FILE_SLUG[chartId]}.csv`, rows);
+}
+
+function exportCsv() {
+  const group = activeGroup();
+  const rows = [["Chỉ tiêu"].concat(state.data.months)];
+  rows.push(["Sản lượng (kg)"].concat(group.volume));
+  rows.push(["Giá trị (USD)"].concat(group.value));
+  rows.push(["ASP (USD/kg)"].concat(group.asp));
+  group.countries.forEach((country) => {
+    rows.push([`${country.name} — sản lượng (kg)`].concat(country.volume));
+    rows.push([`${country.name} — giá trị (USD)`].concat(country.value));
+  });
+  downloadCsv(`nhap-khau-my-${group.key}.csv`, rows);
 }
 
 // NOAA công bố trễ khoảng 1,5 tháng, nên 75 ngày mới đáng báo động (gấp
@@ -674,6 +749,10 @@ async function init() {
   document.getElementById("meta-line").textContent =
     `Dữ liệu tới ${state.data.latest_period} · cập nhật lần cuối ${state.data.generated_at}`;
   document.getElementById("export-csv").addEventListener("click", exportCsv);
+  document.querySelectorAll(".btn-chart-csv").forEach((button) => {
+    button.addEventListener("click",
+      () => exportChartCsv(button.dataset.chart));
+  });
 
   renderStalenessBanner();
   render();
@@ -695,5 +774,6 @@ if (typeof module !== "undefined" && module.exports) {
                       assignGroupColors, pctChange, changeAt, spreadSeries,
                       masterSummaryRows,
                       formatPct, formatSpread, isMasterActive,
-                      masterChartData, renderMaster };
+                      masterChartData, renderMaster,
+                      toCsv, chartCsvRows, downloadCsv, exportChartCsv };
 }
