@@ -699,6 +699,12 @@ function renderMasterTable() {
   document.getElementById("master-table").innerHTML =
     `<thead><tr>${header.map((h) => `<th>${h}</th>`).join("")}</tr></thead>` +
     `<tbody>${body}</tbody>`;
+
+  // Hide the static hint when spread column is not present, show it when present.
+  const hintEl = document.getElementById("master-spread-hint");
+  if (hintEl) {
+    hintEl.hidden = !hasBase;
+  }
 }
 
 /** Resolve tên biến CSS trong dataset thành màu thật, tại thời điểm vẽ. */

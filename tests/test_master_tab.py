@@ -533,3 +533,57 @@ def test_chart_csv_rows_keeps_nulls_so_the_export_leaves_blanks():
 
     assert out["hasNullWord"] is False
     assert out["hasNaN"] is False
+
+
+def test_render_master_table_shows_hint_when_base_group_present_and_hides_when_absent():
+    """Static hint about spread column should be visible/hidden based on base group presence."""
+    script = textwrap.dedent(f"""
+        let capturedHtml = "";
+        const table = {{ set innerHTML(html) {{ capturedHtml = html; }}, get innerHTML() {{ return capturedHtml; }} }};
+        const hint = {{ hidden: false }};
+        const elements = {{
+          "master-table": table,
+          "master-spread-hint": hint,
+        }};
+        global.document = {{ getElementById: (id) => elements[id] || null }};
+
+        // Test with base group present
+        app.state.data = {{
+          months: ["2026-01"],
+          groups: [
+            {{ key: "pangasius", label: "Pangasius (cá tra)", asp: [2], volume: [100], countries: [] }},
+            {{ key: "tilapia", label: "Tilapia", asp: [2.1], volume: [50], countries: [] }},
+          ],
+        }};
+        app.renderMasterTable();
+        const hintVisibleWithBase = !hint.hidden;
+        const hasSpreadColumnWithBase = capturedHtml.includes("Chênh lệch vs cá tra");
+
+        // Test with base group absent
+        app.state.data = {{
+          months: ["2026-01"],
+          groups: [
+            {{ key: "tilapia", label: "Tilapia", asp: [2.1], volume: [50], countries: [] }},
+            {{ key: "cod", label: "Cod", asp: [5], volume: [30], countries: [] }},
+          ],
+        }};
+        app.renderMasterTable();
+        const hintVisibleWithoutBase = !hint.hidden;
+        const hasSpreadColumnWithoutBase = capturedHtml.includes("Chênh lệch vs cá tra");
+
+        console.log(JSON.stringify({{
+          hintVisibleWithBase,
+          hasSpreadColumnWithBase,
+          hintVisibleWithoutBase,
+          hasSpreadColumnWithoutBase,
+        }}));
+    """)
+    result = run_node(script)
+
+    # When base group present: hint visible, spread column present
+    assert result["hintVisibleWithBase"] is True
+    assert result["hasSpreadColumnWithBase"] is True
+
+    # When base group absent: hint hidden, spread column absent
+    assert result["hintVisibleWithoutBase"] is False
+    assert result["hasSpreadColumnWithoutBase"] is False
